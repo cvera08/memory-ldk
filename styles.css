@@ -64,7 +64,7 @@ body{
   left:var(--x);
   top:-12vh;
   font-size:calc(30px * var(--s));
-  opacity:.28;
+  opacity:.22;
   animation:drift var(--d) linear infinite;
 }
 @keyframes drift{
@@ -336,12 +336,12 @@ body{
   grid-template-columns:repeat(var(--cols),minmax(0,1fr));
   gap:var(--gap);
   width:100%;
-  max-width:min(96vw,720px);
+  max-width:min(94vw, calc(var(--cols) * 132px));
 }
 
 .card{
   position:relative;
-  aspect-ratio:3/4;
+  aspect-ratio:1/1;
   border:0;
   padding:0;
   background:transparent;
@@ -523,7 +523,10 @@ body{
 
 /* ---------- calm & accessibility ---------- */
 body.calm .sky{display:none;}
-body.calm .stat--time{display:none;}
+
+/* While a board is on screen the background quiets down,
+   so the only moving thing is the game itself. */
+body.playing .sky{opacity:.35;}
 
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{

@@ -1,0 +1,465 @@
+/* ============================================================
+   Memory LDK - user interface
+   Owns the DOM, the timers and the screen router.
+   All game rules live in engine.js; this file only reacts.
+   ============================================================ */
+(function (LDK) {
+  'use strict';
+
+  var MISMATCH_MS = 1100;   // long enough for a 6 year old to really look
+  var PEEK_MS = 1400;
+  var WIN_DELAY_MS = 700;
+
+  var t = LDK.i18n.t;
+  var el = {};
+
+  var state = {
+    deckId: LDK.DEFAULT_DECK,
+    levelId: LDK.DEFAULT_LEVEL,
+    engine: null,
+    peeksLeft: 0,
+    startedAt: 0,
+    elapsed: 0,
+    tickId: null,
+    busy: false,
+    settings: null
+  };
+
+  /* ---------------------------------------------------------
+     helpers
+     --------------------------------------------------------- */
+
+  function $(id) { return document.getElementById(id); }
+
+  function clock(seconds) {
+    var m = Math.floor(seconds / 60);
+    var s = seconds % 60;
+    return m + ':' + (s < 10 ? '0' : '') + s;
+  }
+
+  function showScreen(name) {
+    ['home', 'game', 'win'].forEach(function (s) {
+      $('screen-' + s).classList.toggle('is-active', s === name);
+    });
+    document.body.classList.toggle('playing', name === 'game');
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }
+
+  function coach(key, vars) {
+    el.coach.textContent = t(key, vars);
+    el.coach.classList.remove('is-pop');
+    void el.coach.offsetWidth;
+    el.coach.classList.add('is-pop');
+  }
+
+  /* ---------------------------------------------------------
+     home screen
+     --------------------------------------------------------- */
+
+  function renderDecks() {
+    el.deckGrid.innerHTML = '';
+    LDK.DECKS.forEach(function (deck) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'deck' + (deck.id === state.deckId ? ' is-selected' : '');
+      btn.setAttribute('role', 'radio');
+      btn.setAttribute('aria-checked', String(deck.id === state.deckId));
+      btn.innerHTML =
+        '<span class="deck__icon" aria-hidden="true">' + deck.icon + '</span>' +
+        '<span class="deck__name"></span>';
+      btn.querySelector('.deck__name').textContent = deck.name;
+      btn.addEventListener('click', function () {
+        state.deckId = deck.id;
+        LDK.storage.saveSettings({ deck: deck.id });
+        LDK.audio.flip();
+        renderDecks();
+      });
+      el.deckGrid.appendChild(btn);
+    });
+  }
+
+  function renderLevels() {
+    el.levelRow.innerHTML = '';
+    LDK.LEVELS.forEach(function (level) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'pill' + (level.id === state.levelId ? ' is-selected' : '');
+      btn.setAttribute('role', 'radio');
+      btn.setAttribute('aria-checked', String(level.id === state.levelId));
+      btn.innerHTML =
+        '<span class="pill__name"></span>' +
+        '<span class="pill__dots" aria-hidden="true">' + new Array(level.pairs / 2 + 1).join('•') + '</span>';
+      btn.querySelector('.pill__name').textContent = t('level.' + level.id);
+      btn.addEventListener('click', function () {
+        state.levelId = level.id;
+        LDK.storage.saveSettings({ level: level.id });
+        LDK.audio.flip();
+        renderLevels();
+      });
+      el.levelRow.appendChild(btn);
+    });
+    var current = LDK.getLevel(state.levelId);
+    el.levelHint.textContent = t('level.hint', { pairs: current.pairs, cards: current.pairs * 2 });
+  }
+
+  /* ---------------------------------------------------------
+     board
+     --------------------------------------------------------- */
+
+  function columnsFor(level) {
+    return window.innerWidth < 560 ? level.colsNarrow : level.cols;
+  }
+
+  function applyColumns() {
+    el.board.style.setProperty('--cols', columnsFor(LDK.getLevel(state.levelId)));
+  }
+
+  function renderBoard() {
+    var cards = state.engine.cards;
+    el.board.innerHTML = '';
+    applyColumns();
+
+    cards.forEach(function (card, index) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'card';
+      btn.dataset.index = String(index);
+      btn.setAttribute('role', 'gridcell');
+      btn.setAttribute('aria-label', 'Hidden card ' + (index + 1));
+      btn.innerHTML =
+        '<span class="card__inner">' +
+          '<span class="card__face card__face--back" aria-hidden="true">✨</span>' +
+          '<span class="card__face card__face--front" aria-hidden="true"></span>' +
+        '</span>';
+      btn.querySelector('.card__face--front').textContent = card.emoji;
+      btn.addEventListener('click', function () { onCardClick(index); });
+      el.board.appendChild(btn);
+    });
+  }
+
+  function cardNode(index) {
+    return el.board.children[index];
+  }
+
+  function paintFaceUp(index, up) {
+    var node = cardNode(index);
+    if (!node) return;
+    var card = state.engine.cards[index];
+    node.classList.toggle('is-up', up);
+    node.setAttribute('aria-label', up ? card.label : 'Hidden card ' + (index + 1));
+  }
+
+  function updateHud() {
+    var s = state.engine.stats;
+    el.statPairs.textContent = s.matched + '/' + s.pairs;
+    el.statMoves.textContent = String(s.moves);
+    el.statTime.textContent = clock(state.elapsed);
+  }
+
+  /* ---------------------------------------------------------
+     timer
+     --------------------------------------------------------- */
+
+  function startTimer() {
+    stopTimer();
+    state.startedAt = Date.now();
+    state.elapsed = 0;
+    state.tickId = window.setInterval(function () {
+      state.elapsed = Math.floor((Date.now() - state.startedAt) / 1000);
+      el.statTime.textContent = clock(state.elapsed);
+    }, 1000);
+  }
+
+  function stopTimer() {
+    if (state.tickId) window.clearInterval(state.tickId);
+    state.tickId = null;
+  }
+
+  /* ---------------------------------------------------------
+     playing
+     --------------------------------------------------------- */
+
+  function startGame() {
+    var deck = LDK.getDeck(state.deckId);
+    var level = LDK.getLevel(state.levelId);
+
+    state.engine = LDK.createEngine({ pool: LDK.poolFor(deck), pairs: level.pairs });
+    state.peeksLeft = level.peeks;
+    state.busy = false;
+
+    el.deckIcon.textContent = deck.icon;
+    el.deckName.textContent = deck.name;
+    el.peekCount.textContent = String(state.peeksLeft);
+    el.btnPeek.disabled = false;
+
+    renderBoard();
+    updateHud();
+    coach('coach.start');
+    showScreen('game');
+    startTimer();
+  }
+
+  function onCardClick(index) {
+    if (state.busy) return;
+    var result = state.engine.flip(index);
+
+    if (result.type === 'ignored' || result.type === 'locked') return;
+
+    paintFaceUp(index, true);
+    LDK.audio.flip();
+    updateHud();
+
+    if (result.type === 'match') {
+      handleMatch(result);
+    } else if (result.type === 'mismatch') {
+      handleMismatch(result);
+    }
+  }
+
+  function handleMatch(result) {
+    updateHud();
+    result.indices.forEach(function (i) {
+      var node = cardNode(i);
+      node.classList.add('is-matched');
+      node.disabled = true;
+      LDK.sparkle(node);
+      window.setTimeout(function () { node.classList.add('is-gone'); }, 620);
+    });
+
+    if (result.done) {
+      LDK.audio.win();
+      finish();
+      return;
+    }
+
+    if (result.streak >= 2) {
+      LDK.audio.streak();
+      coach('coach.streak', { n: result.streak });
+    } else {
+      LDK.audio.match();
+      if (result.remaining === 1) coach('coach.last');
+      else if (result.remaining <= 3) coach('coach.close', { n: result.remaining });
+      else coach('coach.match');
+    }
+  }
+
+  function handleMismatch(result) {
+    state.busy = true;
+    LDK.audio.miss();
+    coach('coach.miss');
+    result.indices.forEach(function (i) { cardNode(i).classList.add('is-wrong'); });
+
+    window.setTimeout(function () {
+      state.engine.hideMismatch().forEach(function (i) {
+        cardNode(i).classList.remove('is-wrong');
+        paintFaceUp(i, false);
+      });
+      state.busy = false;
+    }, MISMATCH_MS);
+  }
+
+  function peek() {
+    if (state.busy || state.peeksLeft <= 0) return;
+    var hidden = state.engine.hiddenIndices();
+    if (!hidden.length) return;
+
+    state.peeksLeft--;
+    state.busy = true;
+    el.peekCount.textContent = String(state.peeksLeft);
+    el.btnPeek.disabled = state.peeksLeft === 0;
+    LDK.audio.peek();
+    coach('coach.peek');
+
+    hidden.forEach(function (i) { cardNode(i).classList.add('is-up'); });
+    window.setTimeout(function () {
+      hidden.forEach(function (i) {
+        if (!state.engine.cards[i].faceUp) cardNode(i).classList.remove('is-up');
+      });
+      state.busy = false;
+    }, PEEK_MS);
+  }
+
+  /* ---------------------------------------------------------
+     win screen
+     --------------------------------------------------------- */
+
+  function finish() {
+    stopTimer();
+    state.busy = true;
+
+    var deck = LDK.getDeck(state.deckId);
+    var stats = state.engine.stats;
+    var stars = state.engine.stars();
+
+    var isRecord = LDK.storage.saveBest(state.deckId, state.levelId, {
+      moves: stats.moves,
+      seconds: state.elapsed,
+      stars: stars
+    });
+    LDK.storage.addSticker(deck.icon);
+    refreshStickerCount();
+
+    el.winSticker.textContent = deck.icon;
+    el.winPraise.textContent = t('praise.' + stars);
+    el.winMoves.textContent = String(stats.moves);
+    el.winTime.textContent = clock(state.elapsed);
+    el.winStreak.textContent = String(stats.bestStreak);
+    el.winRecord.textContent = t('win.record');
+    el.winRecord.hidden = !isRecord;
+
+    Array.prototype.forEach.call(el.winStars.children, function (star, i) {
+      star.classList.toggle('is-off', i >= stars);
+    });
+
+    window.setTimeout(function () {
+      showScreen('win');
+      LDK.confetti(LDK.poolFor(deck).map(function (c) { return c.emoji; }), 40);
+      state.busy = false;
+    }, WIN_DELAY_MS);
+  }
+
+  /* ---------------------------------------------------------
+     sticker book
+     --------------------------------------------------------- */
+
+  function refreshStickerCount() {
+    el.stickerCount.textContent = String(LDK.storage.getStickers().length);
+  }
+
+  function openStickers() {
+    var list = LDK.storage.getStickers();
+    el.stickerGrid.innerHTML = '';
+    list.forEach(function (item) {
+      var box = document.createElement('div');
+      box.className = 'sticker';
+      box.innerHTML =
+        '<span class="sticker__emoji" aria-hidden="true">' + item.emoji + '</span>' +
+        '<span class="sticker__date"></span>';
+      box.querySelector('.sticker__date').textContent = item.date;
+      el.stickerGrid.appendChild(box);
+    });
+    el.stickerEmpty.hidden = list.length > 0;
+    el.modal.hidden = false;
+  }
+
+  function closeStickers() { el.modal.hidden = true; }
+
+  /* ---------------------------------------------------------
+     settings
+     --------------------------------------------------------- */
+
+  function applySound(on) {
+    LDK.audio.setEnabled(on);
+    el.btnSound.setAttribute('aria-pressed', String(on));
+    el.soundGlyph.textContent = on ? '🔊' : '🔇';
+  }
+
+  function applyCalm(on) {
+    document.body.classList.toggle('calm', on);
+    el.btnCalm.setAttribute('aria-pressed', String(on));
+    el.statTimeBox.classList.toggle('is-hidden', on);
+  }
+
+  /* ---------------------------------------------------------
+     boot
+     --------------------------------------------------------- */
+
+  function cacheDom() {
+    el = {
+      deckGrid: $('deck-grid'),
+      levelRow: $('difficulty-row'),
+      levelHint: $('difficulty-hint'),
+      btnPlay: $('btn-play'),
+      btnStickers: $('btn-stickers'),
+      btnSound: $('btn-sound'),
+      soundGlyph: $('sound-glyph'),
+      btnCalm: $('btn-calm'),
+      stickerCount: $('sticker-count'),
+
+      board: $('board'),
+      coach: $('coach'),
+      deckIcon: $('game-deck-icon'),
+      deckName: $('game-deck-name'),
+      statPairs: $('stat-pairs'),
+      statMoves: $('stat-moves'),
+      statTime: $('stat-time'),
+      statTimeBox: $('stat-time-box'),
+      btnBack: $('btn-back'),
+      btnPeek: $('btn-peek'),
+      peekCount: $('peek-count'),
+      btnRestart: $('btn-restart'),
+
+      winSticker: $('win-sticker'),
+      winPraise: $('win-praise'),
+      winStars: $('win-stars'),
+      winMoves: $('win-moves'),
+      winTime: $('win-time'),
+      winStreak: $('win-streak'),
+      winRecord: $('win-record'),
+      btnAgain: $('btn-again'),
+      btnMenu: $('btn-menu'),
+
+      modal: $('modal-stickers'),
+      stickerGrid: $('sticker-grid'),
+      stickerEmpty: $('sticker-empty'),
+      btnCloseStickers: $('btn-close-stickers')
+    };
+  }
+
+  function bind() {
+    el.btnPlay.addEventListener('click', startGame);
+    el.btnRestart.addEventListener('click', startGame);
+    el.btnAgain.addEventListener('click', startGame);
+
+    el.btnBack.addEventListener('click', function () {
+      stopTimer();
+      showScreen('home');
+    });
+    el.btnMenu.addEventListener('click', function () { showScreen('home'); });
+
+    el.btnPeek.addEventListener('click', peek);
+
+    el.btnStickers.addEventListener('click', openStickers);
+    el.btnCloseStickers.addEventListener('click', closeStickers);
+    el.modal.querySelector('[data-close]').addEventListener('click', closeStickers);
+
+    el.btnSound.addEventListener('click', function () {
+      var next = !LDK.audio.isEnabled();
+      applySound(next);
+      LDK.storage.saveSettings({ sound: next });
+      if (next) LDK.audio.match();
+    });
+
+    el.btnCalm.addEventListener('click', function () {
+      var next = el.btnCalm.getAttribute('aria-pressed') !== 'true';
+      applyCalm(next);
+      LDK.storage.saveSettings({ calm: next });
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && !el.modal.hidden) closeStickers();
+    });
+
+    window.addEventListener('resize', function () {
+      if (state.engine) applyColumns();
+    });
+  }
+
+  LDK.start = function () {
+    cacheDom();
+    LDK.i18n.apply(document);
+
+    state.settings = LDK.storage.getSettings();
+    state.deckId = state.settings.deck || LDK.DEFAULT_DECK;
+    state.levelId = state.settings.level || LDK.DEFAULT_LEVEL;
+
+    applySound(state.settings.sound);
+    applyCalm(state.settings.calm);
+
+    renderDecks();
+    renderLevels();
+    refreshStickerCount();
+    bind();
+  };
+
+})(window.LDK = window.LDK || {});
