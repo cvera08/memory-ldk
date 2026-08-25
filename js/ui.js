@@ -25,7 +25,7 @@
   };
 
   /* Persisted preferences, mirrored by every toggle button on screen. */
-  var prefs = { sound: true, calm: false };
+  var prefs = { sound: true, music: false, calm: false };
 
   /* ---------------------------------------------------------
      helpers
@@ -363,6 +363,15 @@
       confirm: function (on) { if (on) LDK.audio.match(); }
     },
     {
+      key: 'music',
+      labelKey: 'home.music',
+      glyph: function () { return '🎵'; },
+      apply: function (on) {
+        if (on) LDK.music.start();
+        else LDK.music.stop();
+      }
+    },
+    {
       key: 'calm',
       labelKey: 'home.calm',
       glyph: function () { return '🌿'; },
@@ -507,6 +516,18 @@
     renderSettings(el.settingsGame, true);
     setPref('sound', saved.sound, true);
     setPref('calm', saved.calm, true);
+
+    /* Autoplay is blocked until the page has been interacted with, so a
+       remembered music preference is applied on the first click instead
+       of at load time. */
+    prefs.music = !!saved.music;
+    syncToggles();
+    if (prefs.music) {
+      document.addEventListener('click', function once() {
+        document.removeEventListener('click', once);
+        if (prefs.music) LDK.music.start();
+      });
+    }
 
     renderDecks();
     renderLevels();

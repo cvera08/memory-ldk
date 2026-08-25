@@ -43,6 +43,8 @@
   }
 
   LDK.audio = {
+    /** Shared AudioContext, so effects and music never open two of them. */
+    context: context,
     setEnabled: function (value) { enabled = !!value; },
     isEnabled: function () { return enabled; },
 

@@ -28,6 +28,7 @@
 
   var DEFAULT_SETTINGS = {
     sound: true,
+    music: false,
     calm: false,
     deck: null,
     level: null

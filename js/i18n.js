@@ -13,7 +13,8 @@
       'home.pickSize': '2. How many cards?',
       'home.play': 'Play',
       'home.stickers': 'My stickers',
-      'home.sound': 'Sound',
+      'home.sound': 'Sound effects',
+      'home.music': 'Music',
       'home.calm': 'Calm mode',
 
       'toggle.on': 'on',
