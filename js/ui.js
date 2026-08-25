@@ -21,9 +21,11 @@
     startedAt: 0,
     elapsed: 0,
     tickId: null,
-    busy: false,
-    settings: null
+    busy: false
   };
+
+  /* Persisted preferences, mirrored by every toggle button on screen. */
+  var prefs = { sound: true, calm: false };
 
   /* ---------------------------------------------------------
      helpers
@@ -345,19 +347,81 @@
   function closeStickers() { el.modal.hidden = true; }
 
   /* ---------------------------------------------------------
-     settings
+     settings toggles
+
+     One definition per preference, rendered into every mount point
+     (home screen and game screen) so the state can never drift
+     between screens and can be changed mid-board.
      --------------------------------------------------------- */
 
-  function applySound(on) {
-    LDK.audio.setEnabled(on);
-    el.btnSound.setAttribute('aria-pressed', String(on));
-    el.soundGlyph.textContent = on ? '🔊' : '🔇';
+  var TOGGLES = [
+    {
+      key: 'sound',
+      labelKey: 'home.sound',
+      glyph: function (on) { return on ? '🔊' : '🔇'; },
+      apply: function (on) { LDK.audio.setEnabled(on); },
+      confirm: function (on) { if (on) LDK.audio.match(); }
+    },
+    {
+      key: 'calm',
+      labelKey: 'home.calm',
+      glyph: function () { return '🌿'; },
+      apply: function (on) {
+        document.body.classList.toggle('calm', on);
+        if (el.statTimeBox) el.statTimeBox.classList.toggle('is-hidden', on);
+      }
+    }
+  ];
+
+  var toggleNodes = {};
+
+  function renderSettings(mount, compact) {
+    if (!mount) return;
+    mount.innerHTML = '';
+    TOGGLES.forEach(function (spec) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'chip chip--toggle' + (compact ? ' chip--icon' : '');
+      btn.innerHTML = '<span class="chip__glyph" aria-hidden="true"></span>' +
+        (compact ? '' : '<span class="chip__text"></span>');
+      if (!compact) btn.querySelector('.chip__text').textContent = t(spec.labelKey);
+      btn.addEventListener('click', function () { setPref(spec.key, !prefs[spec.key]); });
+      (toggleNodes[spec.key] = toggleNodes[spec.key] || []).push(btn);
+      mount.appendChild(btn);
+    });
+    syncToggles();
   }
 
-  function applyCalm(on) {
-    document.body.classList.toggle('calm', on);
-    el.btnCalm.setAttribute('aria-pressed', String(on));
-    el.statTimeBox.classList.toggle('is-hidden', on);
+  function specFor(key) {
+    for (var i = 0; i < TOGGLES.length; i++) if (TOGGLES[i].key === key) return TOGGLES[i];
+    return null;
+  }
+
+  /** Single entry point: updates state, DOM, storage and every button. */
+  function setPref(key, value, silent) {
+    var spec = specFor(key);
+    if (!spec) return;
+    prefs[key] = value;
+    spec.apply(value);
+    syncToggles();
+    if (silent) return;
+    var patch = {};
+    patch[key] = value;
+    LDK.storage.saveSettings(patch);
+    if (spec.confirm) spec.confirm(value);
+  }
+
+  function syncToggles() {
+    TOGGLES.forEach(function (spec) {
+      var on = prefs[spec.key];
+      var label = t(spec.labelKey);
+      (toggleNodes[spec.key] || []).forEach(function (btn) {
+        btn.setAttribute('aria-pressed', String(on));
+        btn.setAttribute('aria-label', label + ': ' + t(on ? 'toggle.on' : 'toggle.off'));
+        btn.title = label;
+        btn.querySelector('.chip__glyph').textContent = spec.glyph(on);
+      });
+    });
   }
 
   /* ---------------------------------------------------------
@@ -371,10 +435,9 @@
       levelHint: $('difficulty-hint'),
       btnPlay: $('btn-play'),
       btnStickers: $('btn-stickers'),
-      btnSound: $('btn-sound'),
-      soundGlyph: $('sound-glyph'),
-      btnCalm: $('btn-calm'),
       stickerCount: $('sticker-count'),
+      settingsHome: $('settings-home'),
+      settingsGame: $('settings-game'),
 
       board: $('board'),
       coach: $('coach'),
@@ -423,19 +486,6 @@
     el.btnCloseStickers.addEventListener('click', closeStickers);
     el.modal.querySelector('[data-close]').addEventListener('click', closeStickers);
 
-    el.btnSound.addEventListener('click', function () {
-      var next = !LDK.audio.isEnabled();
-      applySound(next);
-      LDK.storage.saveSettings({ sound: next });
-      if (next) LDK.audio.match();
-    });
-
-    el.btnCalm.addEventListener('click', function () {
-      var next = el.btnCalm.getAttribute('aria-pressed') !== 'true';
-      applyCalm(next);
-      LDK.storage.saveSettings({ calm: next });
-    });
-
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && !el.modal.hidden) closeStickers();
     });
@@ -449,12 +499,14 @@
     cacheDom();
     LDK.i18n.apply(document);
 
-    state.settings = LDK.storage.getSettings();
-    state.deckId = state.settings.deck || LDK.DEFAULT_DECK;
-    state.levelId = state.settings.level || LDK.DEFAULT_LEVEL;
+    var saved = LDK.storage.getSettings();
+    state.deckId = saved.deck || LDK.DEFAULT_DECK;
+    state.levelId = saved.level || LDK.DEFAULT_LEVEL;
 
-    applySound(state.settings.sound);
-    applyCalm(state.settings.calm);
+    renderSettings(el.settingsHome, false);
+    renderSettings(el.settingsGame, true);
+    setPref('sound', saved.sound, true);
+    setPref('calm', saved.calm, true);
 
     renderDecks();
     renderLevels();

@@ -16,6 +16,9 @@
       'home.sound': 'Sound',
       'home.calm': 'Calm mode',
 
+      'toggle.on': 'on',
+      'toggle.off': 'off',
+
       'hud.pairs': 'Pairs',
       'hud.moves': 'Moves',
       'hud.time': 'Time',

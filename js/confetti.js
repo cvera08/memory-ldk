@@ -7,10 +7,15 @@
 
   var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  /** Calm mode and reduced motion both mean "do not animate anything". */
+  function muted() {
+    return reduced || document.body.classList.contains('calm');
+  }
+
   /** burst(['🌸','👑'], 40) */
   LDK.confetti = function (emojis, count) {
     var layer = document.getElementById('confetti-layer');
-    if (!layer || reduced || !emojis || !emojis.length) return;
+    if (!layer || muted() || !emojis || !emojis.length) return;
 
     var total = count || 34;
     for (var i = 0; i < total; i++) {
@@ -31,7 +36,7 @@
 
   /** A small celebration right where a pair was found. */
   LDK.sparkle = function (element) {
-    if (!element || reduced) return;
+    if (!element || muted()) return;
     var rect = element.getBoundingClientRect();
     var layer = document.getElementById('confetti-layer');
     if (!layer) return;

@@ -267,6 +267,10 @@ body{
   font-size:13px;
 }
 .chip--action{font-size:15px;padding:11px 20px;}
+.chip--icon{padding:10px 13px;font-size:17px;line-height:1;}
+.chip--icon .chip__glyph{display:block;}
+
+.settings-mount{display:inline-flex;gap:10px;flex-wrap:wrap;}
 
 .icon-btn{
   appearance:none;
@@ -522,11 +526,19 @@ body{
 }
 
 /* ---------- calm & accessibility ---------- */
-body.calm .sky{display:none;}
 
-/* While a board is on screen the background quiets down,
-   so the only moving thing is the game itself. */
-body.playing .sky{opacity:.35;}
+/* While a board is on screen the only moving thing is the game itself. */
+body.playing .sky{display:none;}
+
+/* Calm mode extends that to every screen and removes the remaining
+   ambient motion: no drifting friends, no confetti, no idle bobbing,
+   no clock. Nothing on the page moves unless the child moved it. */
+body.calm .sky,
+body.calm .confetti-layer{display:none;}
+body.calm .win-card__sticker{animation:none;}
+body.calm .card:hover:not(:disabled) .card__inner{transform:none;}
+body.calm .card.is-up:hover .card__inner,
+body.calm .card.is-matched:hover .card__inner{transform:rotateY(180deg);}
 
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{
