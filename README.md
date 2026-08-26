@@ -131,11 +131,23 @@ js/audio.js       WebAudio blips
 js/confetti.js    emoji celebration
 js/ui.js          DOM rendering, timers, screen router
 js/main.js        entry point
+tests/            node tests for the engine, no runner required
 ```
 
 The split is deliberate: `engine.js` has no DOM and no timers, so the rules can be
 tested in isolation, and `content.js` holds everything you would want to change to
 turn this into a different game.
+
+### Tests
+
+```bash
+node tests/engine.test.js
+```
+
+No test runner and nothing to install. The suite gives the browser modules a fake
+`window`, then exercises the rules directly: deck integrity, shuffling, match and
+mismatch handling, board locking, streaks, win detection and the star thresholds.
+The RNG is injectable, so every board in the suite is reproducible from its seed.
 
 ### Adding your own theme
 
