@@ -84,7 +84,9 @@
 
       'praise.3': 'Amazing memory!',
       'praise.2': 'Really well done!',
-      'praise.1': 'You finished it! Great effort.'
+      'praise.1': 'You finished it! Great effort.',
+
+      'credits': 'Made with 💜 by LDK'
     }
   };
 

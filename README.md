@@ -162,4 +162,4 @@ MIT — see [LICENSE](LICENSE).
 
 ---
 
-Made with 💜 for LDK.
+Made with 💜 by LDK — Carlos, and the two people the L and the D stand for.
