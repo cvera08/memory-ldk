@@ -30,6 +30,23 @@ theme never plays out the same way twice.
 
 Board sizes: **Little** (6 pairs) · **Medium** (8) · **Big** (10) · **Super** (12).
 
+### If you are looking for this game under another name
+
+It is the same game everywhere, and almost every country renamed it:
+
+| Where | Called |
+| --- | --- |
+| English (general) | **Memory**, **Concentration**, **Pairs**, **Match Match**, **Match Up** |
+| Britain | **Pelmanism** — after the Pelman Institute, a memory-training school founded in London in 1899 |
+| Argentina | **Memotest** |
+| Mexico and much of Latin America | **Memorama** (a registered trademark there since 1973) |
+| Spain | **Juego de memoria**, **Memory** |
+| Japan | **Shinkei-suijaku** (神経衰弱), literally "nerve weakening" |
+| Czechia | **Pexeso** |
+
+"Memory" is the name most people search for in English, which is why this one is
+called Memory LDK.
+
 ---
 
 ## Case study: building a game around attention, not against it
@@ -151,6 +168,25 @@ read from the same list.
 
 ---
 
+## Privacy
+
+Everything the game remembers — best scores, stickers, sound and music preferences —
+lives in the browser's own `localStorage`, on the device. There is no account, no
+server, no database, no analytics and no leaderboard. Nothing is uploaded anywhere,
+and nobody else can see how a child is doing.
+
+That is a design decision, not a missing feature. The point is a child competing with
+her own previous attempt, not with strangers.
+
+Practical consequences:
+
+- Progress is **per browser, per device**. The same child on a phone and on a laptop
+  has two separate sticker books.
+- A hard refresh (`Cmd`/`Ctrl` + `Shift` + `R`) does **not** erase anything — that
+  clears the cache, not stored data.
+- Progress is lost only by clearing site data for the domain, or by playing in a
+  private / incognito window.
+
 ## Tech
 
 HTML, CSS and vanilla JavaScript. No frameworks, no dependencies, no build.
@@ -162,4 +198,4 @@ MIT — see [LICENSE](LICENSE).
 
 ---
 
-Made with 💜 by LDK — Carlos, and the two people the L and the D stand for.
+Made with 💜 by LDK — the three of us.
