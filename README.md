@@ -97,7 +97,8 @@ toy built with some care about where a child's attention goes.
 - Sticker book, one sticker per cleared board
 - Gentle WebAudio sound effects — no audio files, mutable, remembered
 - Calm mode: hides background motion and the timer
-- Keyboard playable, `aria-label`s on every card, honours `prefers-reduced-motion`
+- Keyboard playable: one Tab stop into the board, then arrow keys, `Home`/`End`, and
+  `Enter`/`Space` to flip; `aria-label`s on every card; honours `prefers-reduced-motion`
 - Works on phone, tablet and desktop
 - Progress stored locally in the browser — nothing leaves the device
 

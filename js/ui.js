@@ -126,7 +126,7 @@
       btn.type = 'button';
       btn.className = 'card';
       btn.dataset.index = String(index);
-      btn.setAttribute('role', 'gridcell');
+      btn.tabIndex = index === 0 ? 0 : -1;
       btn.setAttribute('aria-label', 'Hidden card ' + (index + 1));
       btn.innerHTML =
         '<span class="card__inner">' +
@@ -141,6 +141,71 @@
 
   function cardNode(index) {
     return el.board.children[index];
+  }
+
+  /* ---------------------------------------------------------
+     keyboard navigation
+
+     The board is a roving-tabindex group: one Tab stop gets you in,
+     then the arrow keys walk the grid and Enter or Space flips.
+     Matched cards are disabled, so movement skips over them.
+     --------------------------------------------------------- */
+
+  function setTabStop(index) {
+    Array.prototype.forEach.call(el.board.children, function (node, i) {
+      node.tabIndex = i === index ? 0 : -1;
+    });
+  }
+
+  /** First card that can still be turned over, searching from `from`. */
+  function seekOpen(from, delta) {
+    var total = el.board.children.length;
+    for (var i = from; i >= 0 && i < total; i += delta) {
+      if (!el.board.children[i].disabled) return i;
+    }
+    return -1;
+  }
+
+  function moveFocus(from, delta) {
+    var target = seekOpen(from + delta, delta > 0 ? 1 : -1);
+    if (target < 0) return;
+    setTabStop(target);
+    el.board.children[target].focus();
+  }
+
+  /** Keeps a Tab stop on the board once the focused card is matched away. */
+  function repairTabStop() {
+    var hasStop = Array.prototype.some.call(el.board.children, function (node) {
+      return node.tabIndex === 0 && !node.disabled;
+    });
+    if (hasStop) return;
+    var next = seekOpen(0, 1);
+    if (next >= 0) setTabStop(next);
+  }
+
+  function onBoardKeydown(event) {
+    var focused = document.activeElement;
+    if (!focused || focused.parentNode !== el.board) return;
+
+    var index = Number(focused.dataset.index);
+    var cols = columnsFor(LDK.getLevel(state.levelId));
+    var deltas = {
+      ArrowRight: 1,
+      ArrowLeft: -1,
+      ArrowDown: cols,
+      ArrowUp: -cols
+    };
+
+    if (event.key === 'Home' || event.key === 'End') {
+      event.preventDefault();
+      var edge = event.key === 'Home' ? seekOpen(0, 1) : seekOpen(el.board.children.length - 1, -1);
+      if (edge >= 0) { setTabStop(edge); el.board.children[edge].focus(); }
+      return;
+    }
+
+    if (deltas[event.key] === undefined) return;
+    event.preventDefault();
+    moveFocus(index, deltas[event.key]);
   }
 
   function paintFaceUp(index, up) {
@@ -244,6 +309,7 @@
       LDK.sparkle(node);
       window.setTimeout(function () { node.classList.add('is-gone'); }, 620);
     });
+    repairTabStop();
 
     if (result.done) {
       LDK.audio.win();
@@ -507,6 +573,7 @@
     el.btnMenu.addEventListener('click', function () { showScreen('home'); });
 
     el.btnPeek.addEventListener('click', peek);
+    el.board.addEventListener('keydown', onBoardKeydown);
 
     el.btnStickers.addEventListener('click', openStickers);
     el.btnCloseStickers.addEventListener('click', closeStickers);
