@@ -70,3 +70,46 @@ audio files, emoji confetti, star scoring, sticker book, calm mode, keyboard sup
 - *"The engine has no DOM."* How a pure state machine let a browser game be unit-tested in Node.
 - *"Internationalise on day one, even if you only ship one language."* The cost curve of retrofitting i18n.
 - *"Difficulty that goes down."* Why an inverted difficulty curve is the right shape for a child.
+
+---
+
+## 2026-08-27 — Week 1: the settings taught me more than the game did
+
+Four changes this week, all of them triggered by one round of real feedback.
+
+**1. "Sound" was doing two jobs.** A single speaker icon was reading as *music* to some
+people and as *effects* to others. The fix was not a better icon, it was admitting there
+were two features hiding behind one control: `🔊 Sound effects` and `🎵 Music`, separate
+toggles, separately remembered. The lesson is old and I keep relearning it — when users
+disagree about what a control does, the control is usually doing more than one thing.
+
+**2. The music is generated, not a file.** A `.mp3` would have meant a download, a
+licence, and a loop point a child would learn to hate by the fourth playthrough.
+Instead it is about ninety lines of WebAudio: a random walk along a C major pentatonic
+scale, one note a second, a third above it now and then, a root note under each bar.
+Pentatonic means no two notes can clash, so a random walk cannot produce a wrong note.
+Zero bytes, never repeats, works offline.
+
+**3. Calm mode was correct and still felt broken.** It genuinely hid every animation on
+every screen — I verified it. But the toggle lived only on the home screen, so once a
+board was open there was no way to reach it and no sign it was on. A setting you cannot
+see or change from where the problem is *is* a broken setting, whatever the code does.
+Fixing it meant extracting the toggles into one component rendered into both screens,
+sharing state, so they can never disagree. The board screen also now hides ambient
+motion unconditionally, calm mode or not.
+
+**4. Tests before features.** Eighteen assertions over the engine, no framework, no
+`node_modules`: `node tests/engine.test.js`. Possible only because the engine never
+touches the DOM. I checked the suite could fail by breaking a star threshold on purpose
+and watching two tests go red — a test suite you have never seen fail is decoration.
+
+**Also:** the favicon was a placeholder cherry emoji I never replaced. It is now a
+hand-drawn SVG of two matching cards in the brand gradient, with a PNG touch icon
+rasterised by a small Python script rather than a design tool.
+
+## Post ideas
+
+- *"When users disagree about what a button does, it is doing two things."* The sound/music split.
+- *"Ninety lines of WebAudio beat a three-megabyte MP3."* Generated music from a pentatonic random walk.
+- *"The setting worked. It was still broken."* Discoverability as a correctness property.
+- *"A test suite you have never seen fail is decoration."* Mutation-checking your own tests.
