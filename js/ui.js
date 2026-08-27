@@ -162,19 +162,36 @@
      timer
      --------------------------------------------------------- */
 
+  function tick() {
+    state.elapsed = Math.floor((Date.now() - state.startedAt) / 1000);
+    el.statTime.textContent = clock(state.elapsed);
+  }
+
   function startTimer() {
     stopTimer();
-    state.startedAt = Date.now();
     state.elapsed = 0;
-    state.tickId = window.setInterval(function () {
-      state.elapsed = Math.floor((Date.now() - state.startedAt) / 1000);
-      el.statTime.textContent = clock(state.elapsed);
-    }, 1000);
+    state.startedAt = Date.now();
+    state.tickId = window.setInterval(tick, 1000);
   }
 
   function stopTimer() {
     if (state.tickId) window.clearInterval(state.tickId);
     state.tickId = null;
+  }
+
+  /** Freeze the clock, keeping the seconds counted so far. */
+  function pauseTimer() {
+    if (!state.tickId) return;
+    tick();
+    stopTimer();
+  }
+
+  /** Pick the clock back up where it stopped, never from zero. */
+  function resumeTimer() {
+    if (state.tickId || !state.engine || state.engine.isDone()) return;
+    if (!$('screen-game').classList.contains('is-active')) return;
+    state.startedAt = Date.now() - state.elapsed * 1000;
+    state.tickId = window.setInterval(tick, 1000);
   }
 
   /* ---------------------------------------------------------
@@ -501,6 +518,18 @@
 
     window.addEventListener('resize', function () {
       if (state.engine) applyColumns();
+    });
+
+    /* A child who wanders off mid-board should not come back to a ruined
+       best time, and music playing to an empty room helps nobody. */
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) {
+        pauseTimer();
+        LDK.music.stop();
+      } else {
+        resumeTimer();
+        if (prefs.music) LDK.music.start();
+      }
     });
   }
 
