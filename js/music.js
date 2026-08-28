@@ -1,118 +1,149 @@
 /* ============================================================
-   Memory LDK - background music
+   Memory LDK - background sound bed
 
-   A slow, generated lullaby rather than an audio file: it never
-   loops audibly, weighs nothing, and works offline. Everything is
-   built from a C major pentatonic scale, which has no semitone
-   clashes, so any two notes sound consonant together.
+   Not a melody. A melody is something the ear follows, and anything
+   the ear follows competes with the game for attention - which is
+   the opposite of what this app is for.
+
+   What plays instead is the kind of thing people put on to study:
+   a soft filtered noise bed, like distant rain, with very slow pad
+   chords drifting over it. Nothing has a beat, nothing repeats on a
+   period short enough to notice, and nothing ever arrives suddenly.
    ============================================================ */
 (function (LDK) {
   'use strict';
 
-  /* C major pentatonic across two octaves, plus two bass roots. */
-  var SCALE = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25];
-  var BASS = [65.41, 98.00];
+  /* Four warm voicings, each held for a long time and cross-faded.
+     Low roots, wide spacing, no thirds fighting in the low register. */
+  var CHORDS = [
+    [130.81, 196.00, 329.63],   /* C3  G3  E4 */
+    [110.00, 164.81, 261.63],   /* A2  E3  C4 */
+    [87.31, 174.61, 261.63],    /* F2  F3  C4 */
+    [98.00, 196.00, 293.66]     /* G2  G3  D4 */
+  ];
 
-  var STEP_S = 1.05;      // seconds between notes - deliberately unhurried
-  var LOOKAHEAD_MS = 220; // scheduler tick
-  var HORIZON_S = 1.4;    // how far ahead notes are queued
-  var VOLUME = 0.45;      // master, on top of already quiet per-note gains
+  var CHORD_S = 11;        /* how long each chord is on stage */
+  var ATTACK_S = 4.5;      /* nothing ever starts abruptly */
+  var RELEASE_S = 6.5;     /* chords overlap, so there is no seam */
+  var PAD_GAIN = 0.05;     /* per note - three notes stack to ~0.15 */
+  var NOISE_GAIN = 0.035;
+  var VOLUME = 0.55;       /* master, reached over a 3 second fade-in */
 
   var master = null;
+  var noiseGain = null;
+  var noiseSource = null;
+  var breath = null;
   var timerId = null;
-  var nextNoteAt = 0;
-  var step = 0;
-  var index = 2;
+  var chordIndex = 0;
   var playing = false;
 
-  function chain() {
+  /**
+   * Brown noise: white noise integrated, which rolls off the harsh
+   * high end and lands somewhere between rain and a ventilation hum.
+   * Four seconds of it, looped - long enough that the loop is inaudible.
+   */
+  function brownNoise(ac) {
+    var length = Math.floor(ac.sampleRate * 4);
+    var buffer = ac.createBuffer(1, length, ac.sampleRate);
+    var data = buffer.getChannelData(0);
+    var last = 0;
+    for (var i = 0; i < length; i++) {
+      last = (last + 0.02 * (Math.random() * 2 - 1)) / 1.02;
+      data[i] = last * 3.2;
+    }
+    return buffer;
+  }
+
+  function build() {
     var ac = LDK.audio.context();
     if (!ac) return null;
     if (master) return ac;
 
-    /* A gentle low-pass keeps the sines soft instead of glassy. */
-    var filter = ac.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.value = 1400;
+    var warmth = ac.createBiquadFilter();
+    warmth.type = 'lowpass';
+    warmth.frequency.value = 1100;
 
     master = ac.createGain();
     master.gain.value = 0;
-    master.connect(filter).connect(ac.destination);
+    master.connect(warmth).connect(ac.destination);
+
+    /* Noise bed, heavily filtered so it sits under everything. */
+    var muffle = ac.createBiquadFilter();
+    muffle.type = 'lowpass';
+    muffle.frequency.value = 520;
+
+    noiseGain = ac.createGain();
+    noiseGain.gain.value = NOISE_GAIN;
+    muffle.connect(noiseGain).connect(master);
+    noiseGain._input = muffle;
+
+    /* A very slow swell so the bed breathes instead of sitting flat. */
+    breath = ac.createOscillator();
+    var depth = ac.createGain();
+    breath.frequency.value = 0.045;
+    depth.gain.value = NOISE_GAIN * 0.45;
+    breath.connect(depth).connect(noiseGain.gain);
+    breath.start();
+
     return ac;
   }
 
-  /** One soft note: sine body plus a quiet triangle for a bit of warmth. */
-  function voice(freq, at, duration, gain) {
-    var ac = LDK.audio.context();
+  function startNoise(ac) {
+    noiseSource = ac.createBufferSource();
+    noiseSource.buffer = brownNoise(ac);
+    noiseSource.loop = true;
+    noiseSource.connect(noiseGain._input);
+    noiseSource.start();
+  }
+
+  /** One pad note: two slightly detuned oscillators, long in and out. */
+  function padNote(ac, freq, at) {
     var amp = ac.createGain();
     amp.gain.setValueAtTime(0.0001, at);
-    amp.gain.exponentialRampToValueAtTime(gain, at + 0.35);
-    amp.gain.exponentialRampToValueAtTime(0.0001, at + duration);
+    amp.gain.exponentialRampToValueAtTime(PAD_GAIN, at + ATTACK_S);
+    amp.gain.exponentialRampToValueAtTime(0.0001, at + ATTACK_S + RELEASE_S);
     amp.connect(master);
 
-    ['sine', 'triangle'].forEach(function (type, i) {
+    [-3, 3].forEach(function (cents) {
       var osc = ac.createOscillator();
-      var sub = ac.createGain();
-      osc.type = type;
+      var half = ac.createGain();
+      osc.type = 'sine';
       osc.frequency.setValueAtTime(freq, at);
-      sub.gain.value = i === 0 ? 1 : 0.22;
-      osc.connect(sub).connect(amp);
+      osc.detune.setValueAtTime(cents, at);
+      half.gain.value = 0.5;
+      osc.connect(half).connect(amp);
       osc.start(at);
-      osc.stop(at + duration + 0.05);
+      osc.stop(at + ATTACK_S + RELEASE_S + 0.2);
     });
   }
 
-  /**
-   * Random walk along the scale: mostly small steps, so the melody
-   * wanders instead of jumping. Predictable enough to fade into the
-   * background, varied enough not to become a loop the ear latches on to.
-   */
-  function nextIndex() {
-    var move = [-2, -1, -1, 0, 1, 1, 2][Math.floor(Math.random() * 7)];
-    index = Math.min(SCALE.length - 1, Math.max(0, index + move));
-    return index;
-  }
-
-  function scheduleStep(at, n) {
-    voice(SCALE[nextIndex()], at, 2.6, 0.16);
-
-    /* A third above, now and then, to open the sound up. */
-    if (n % 4 === 1 && Math.random() < 0.45 && index + 2 < SCALE.length) {
-      voice(SCALE[index + 2], at + 0.06, 2.2, 0.08);
-    }
-
-    /* Slow root note underneath, one per bar. */
-    if (n % 8 === 0) {
-      voice(BASS[(n / 8) % 2], at, 6.5, 0.12);
-    }
-  }
-
-  function tick() {
+  function nextChord() {
     var ac = LDK.audio.context();
-    if (!ac) return;
-    while (nextNoteAt < ac.currentTime + HORIZON_S) {
-      scheduleStep(nextNoteAt, step);
-      nextNoteAt += STEP_S;
-      step++;
-    }
+    if (!ac || !playing) return;
+    var at = ac.currentTime + 0.05;
+    CHORDS[chordIndex % CHORDS.length].forEach(function (freq) {
+      padNote(ac, freq, at);
+    });
+    chordIndex++;
   }
 
   LDK.music = {
     isPlaying: function () { return playing; },
 
     start: function () {
-      var ac = chain();
+      var ac = build();
       if (!ac || playing) return;
       if (ac.state === 'suspended') ac.resume();
 
       playing = true;
-      nextNoteAt = ac.currentTime + 0.25;
+      if (!noiseSource) startNoise(ac);
+
       master.gain.cancelScheduledValues(ac.currentTime);
       master.gain.setValueAtTime(master.gain.value, ac.currentTime);
-      master.gain.linearRampToValueAtTime(VOLUME, ac.currentTime + 2.5);
+      master.gain.linearRampToValueAtTime(VOLUME, ac.currentTime + 3);
 
-      tick();
-      timerId = window.setInterval(tick, LOOKAHEAD_MS);
+      nextChord();
+      timerId = window.setInterval(nextChord, CHORD_S * 1000);
     },
 
     stop: function () {
@@ -123,10 +154,17 @@
 
       var ac = LDK.audio.context();
       if (!ac || !master) return;
-      /* Fade out rather than cut, so it never clicks. */
+
+      /* Fade out over two seconds, then let the noise loop go. */
       master.gain.cancelScheduledValues(ac.currentTime);
       master.gain.setValueAtTime(master.gain.value, ac.currentTime);
-      master.gain.linearRampToValueAtTime(0, ac.currentTime + 1.2);
+      master.gain.linearRampToValueAtTime(0, ac.currentTime + 2);
+
+      var source = noiseSource;
+      noiseSource = null;
+      window.setTimeout(function () {
+        try { source.stop(); } catch (e) { /* already stopped */ }
+      }, 2200);
     }
   };
 
