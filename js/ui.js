@@ -44,6 +44,7 @@
       $('screen-' + s).classList.toggle('is-active', s === name);
     });
     document.body.classList.toggle('playing', name === 'game');
+    LDK.tip.hide();
     window.scrollTo({ top: 0, behavior: 'auto' });
   }
 
@@ -478,6 +479,9 @@
         (compact ? '' : '<span class="chip__text"></span>');
       if (!compact) btn.querySelector('.chip__text').textContent = t(spec.labelKey);
       btn.addEventListener('click', function () { setPref(spec.key, !prefs[spec.key]); });
+      LDK.tip.attach(btn, function () {
+        return t('tip.' + spec.key) + '\n' + t(prefs[spec.key] ? 'tip.on' : 'tip.off');
+      });
       (toggleNodes[spec.key] = toggleNodes[spec.key] || []).push(btn);
       mount.appendChild(btn);
     });
@@ -510,7 +514,6 @@
       (toggleNodes[spec.key] || []).forEach(function (btn) {
         btn.setAttribute('aria-pressed', String(on));
         btn.setAttribute('aria-label', label + ': ' + t(on ? 'toggle.on' : 'toggle.off'));
-        btn.title = label;
         btn.querySelector('.chip__glyph').textContent = spec.glyph(on);
       });
     });
@@ -574,6 +577,16 @@
 
     el.btnPeek.addEventListener('click', peek);
     el.board.addEventListener('keydown', onBoardKeydown);
+
+    /* Every control whose job is not obvious from its icon alone. */
+    [
+      [el.btnPeek, 'tip.peek'],
+      [el.btnRestart, 'tip.restart'],
+      [el.btnStickers, 'tip.stickers'],
+      [el.btnBack, 'tip.back']
+    ].forEach(function (pair) {
+      LDK.tip.attach(pair[0], function () { return t(pair[1]); });
+    });
 
     el.btnStickers.addEventListener('click', openStickers);
     el.btnCloseStickers.addEventListener('click', closeStickers);

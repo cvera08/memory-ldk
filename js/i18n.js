@@ -20,6 +20,16 @@
       'toggle.on': 'on',
       'toggle.off': 'off',
 
+      'tip.sound': 'Little blips when you turn a card over and when you find a pair.',
+      'tip.music': 'A soft background sound that helps you concentrate.',
+      'tip.calm': 'Hides the moving background, the confetti and the clock.',
+      'tip.peek': 'Shows every hidden card for a moment. You only get a few.',
+      'tip.restart': 'Shuffles this board and starts it again from the beginning.',
+      'tip.stickers': 'You collect one sticker for every board you finish.',
+      'tip.back': 'Go back and choose another theme.',
+      'tip.on': 'Right now: on. Click to turn it off.',
+      'tip.off': 'Right now: off. Click to turn it on.',
+
       'hud.pairs': 'Pairs',
       'hud.moves': 'Moves',
       'hud.time': 'Time',

@@ -500,6 +500,43 @@ body{
 .sticker__emoji{font-size:30px;line-height:1;display:block;}
 .sticker__date{font-size:10px;color:var(--ink-soft);margin-top:4px;display:block;}
 
+/* ---------- help bubbles ---------- */
+.tip{
+  position:fixed;
+  z-index:70;
+  max-width:min(280px,80vw);
+  padding:10px 13px;
+  border-radius:14px;
+  background:var(--purple-900);
+  color:#fff;
+  font-size:13.5px;
+  line-height:1.35;
+  box-shadow:var(--shadow-lg);
+  pointer-events:none;
+  opacity:0;
+  transform:translateY(4px);
+  transition:opacity .14s ease,transform .14s ease;
+}
+.tip.is-visible{opacity:1;transform:none;}
+.tip[hidden]{display:none;}
+.tip__text{display:block;}
+.tip__note{display:block;margin-top:4px;color:var(--purple-300);font-size:12.5px;}
+.tip::after{
+  content:"";
+  position:absolute;
+  left:50%;
+  margin-left:-6px;
+  border:6px solid transparent;
+  top:100%;
+  border-top-color:var(--purple-900);
+}
+.tip--below::after{
+  top:auto;
+  bottom:100%;
+  border-top-color:transparent;
+  border-bottom-color:var(--purple-900);
+}
+
 /* ---------- confetti ---------- */
 .confetti-layer{position:fixed;inset:0;pointer-events:none;z-index:60;overflow:hidden;}
 .confetti-bit{position:absolute;top:-8vh;font-size:26px;will-change:transform;animation:fall linear forwards;}
