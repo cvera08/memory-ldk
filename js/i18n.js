@@ -49,6 +49,12 @@
       'stickers.title': 'My sticker book',
       'stickers.sub': 'You earn one sticker every time you clear a board.',
       'stickers.empty': 'No stickers yet. Win a game to get your first one!',
+      'reset.button': 'Start over',
+      'reset.confirm': 'Erase every sticker and best score? This cannot be undone.',
+      'reset.yes': 'Yes, erase everything',
+      'reset.cancel': 'Keep them',
+      'reset.done': 'All clear. A fresh start!',
+      'tip.reset': 'Erases the stickers and the best scores saved on this device.',
 
       'level.little': 'Little',
       'level.medium': 'Medium',

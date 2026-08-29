@@ -76,6 +76,20 @@
       return Array.isArray(list) ? list : [];
     },
 
+    /**
+     * Wipes scores and stickers but keeps sound / music / calm settings.
+     * Progress is the child's; preferences are the household's.
+     */
+    clearProgress: function () {
+      try {
+        window.localStorage.removeItem(PREFIX + 'best');
+        window.localStorage.removeItem(PREFIX + 'stickers');
+        return true;
+      } catch (e) {
+        return false;
+      }
+    },
+
     addSticker: function (emoji) {
       var list = this.getStickers();
       list.unshift({ emoji: emoji, date: new Date().toISOString().slice(0, 10) });

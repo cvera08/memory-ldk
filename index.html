@@ -146,6 +146,20 @@
     <p class="modal__sub" data-i18n="stickers.sub">You earn one sticker every time you clear a board.</p>
     <div class="sticker-grid" id="sticker-grid"></div>
     <p class="modal__empty" id="sticker-empty" data-i18n="stickers.empty">No stickers yet. Win a game to get your first one!</p>
+
+    <div class="modal__foot">
+      <button class="link-btn" id="btn-reset" type="button" data-i18n="reset.button">Start over</button>
+
+      <div class="confirm" id="reset-confirm" hidden>
+        <p class="confirm__question" data-i18n="reset.confirm">Erase every sticker and best score?</p>
+        <div class="confirm__row">
+          <button class="chip chip--danger" id="btn-reset-yes" type="button" data-i18n="reset.yes">Yes, erase everything</button>
+          <button class="chip" id="btn-reset-no" type="button" data-i18n="reset.cancel">Keep them</button>
+        </div>
+      </div>
+
+      <p class="confirm__done" id="reset-done" hidden data-i18n="reset.done">All clear. A fresh start!</p>
+    </div>
   </div>
 </div>
 

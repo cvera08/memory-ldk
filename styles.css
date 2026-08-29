@@ -15,6 +15,7 @@
   --pink-100:#ffe4f1;
   --mint:#3fd6a4;
   --sun:#ffc93c;
+  --danger:#e0466b;
 
   /* surfaces */
   --bg:#fdf3ff;
@@ -499,6 +500,31 @@ body{
 }
 .sticker__emoji{font-size:30px;line-height:1;display:block;}
 .sticker__date{font-size:10px;color:var(--ink-soft);margin-top:4px;display:block;}
+
+.modal__foot{margin-top:18px;padding-top:14px;border-top:2px dashed var(--line);text-align:center;}
+.link-btn{
+  appearance:none;
+  border:0;
+  background:none;
+  font-family:inherit;
+  font-size:13px;
+  color:var(--ink-soft);
+  text-decoration:underline;
+  text-underline-offset:3px;
+  cursor:pointer;
+  padding:6px 10px;
+  border-radius:8px;
+}
+.link-btn:hover{color:var(--danger);}
+.link-btn:focus-visible{outline:3px solid var(--purple);outline-offset:2px;}
+.link-btn[hidden]{display:none;}
+
+.confirm[hidden],.confirm__done[hidden]{display:none;}
+.confirm__question{margin:8px 0 12px;font-size:14px;color:var(--ink);}
+.confirm__row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+.chip--danger{border-color:var(--danger);color:var(--danger);}
+.chip--danger:hover{border-color:var(--danger);background:#ffeef2;}
+.confirm__done{margin:10px 0 0;font-size:14px;font-weight:600;color:var(--mint);}
 
 /* ---------- help bubbles ---------- */
 .tip{

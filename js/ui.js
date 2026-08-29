@@ -412,7 +412,7 @@
     el.stickerCount.textContent = String(LDK.storage.getStickers().length);
   }
 
-  function openStickers() {
+  function renderStickers() {
     var list = LDK.storage.getStickers();
     el.stickerGrid.innerHTML = '';
     list.forEach(function (item) {
@@ -425,10 +425,27 @@
       el.stickerGrid.appendChild(box);
     });
     el.stickerEmpty.hidden = list.length > 0;
+    el.btnReset.hidden = list.length === 0;
+  }
+
+  function openStickers() {
+    renderStickers();
+    /* Always open in the neutral state - never mid-confirmation. */
+    el.resetConfirm.hidden = true;
+    el.resetDone.hidden = true;
     el.modal.hidden = false;
   }
 
   function closeStickers() { el.modal.hidden = true; }
+
+  function resetProgress() {
+    LDK.storage.clearProgress();
+    renderStickers();
+    refreshStickerCount();
+    el.resetConfirm.hidden = true;
+    el.btnReset.hidden = true;
+    el.resetDone.hidden = false;
+  }
 
   /* ---------------------------------------------------------
      settings toggles
@@ -560,7 +577,12 @@
       modal: $('modal-stickers'),
       stickerGrid: $('sticker-grid'),
       stickerEmpty: $('sticker-empty'),
-      btnCloseStickers: $('btn-close-stickers')
+      btnCloseStickers: $('btn-close-stickers'),
+      btnReset: $('btn-reset'),
+      resetConfirm: $('reset-confirm'),
+      resetDone: $('reset-done'),
+      btnResetYes: $('btn-reset-yes'),
+      btnResetNo: $('btn-reset-no')
     };
   }
 
@@ -583,6 +605,7 @@
       [el.btnPeek, 'tip.peek'],
       [el.btnRestart, 'tip.restart'],
       [el.btnStickers, 'tip.stickers'],
+      [el.btnReset, 'tip.reset'],
       [el.btnBack, 'tip.back']
     ].forEach(function (pair) {
       LDK.tip.attach(pair[0], function () { return t(pair[1]); });
@@ -591,6 +614,15 @@
     el.btnStickers.addEventListener('click', openStickers);
     el.btnCloseStickers.addEventListener('click', closeStickers);
     el.modal.querySelector('[data-close]').addEventListener('click', closeStickers);
+
+    /* Two steps on purpose: a six year old should not be able to wipe
+       her own sticker book with one stray tap. */
+    el.btnReset.addEventListener('click', function () {
+      el.resetConfirm.hidden = false;
+      el.btnResetNo.focus();
+    });
+    el.btnResetNo.addEventListener('click', function () { el.resetConfirm.hidden = true; });
+    el.btnResetYes.addEventListener('click', resetProgress);
 
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && !el.modal.hidden) closeStickers();
