@@ -67,6 +67,11 @@ body{
   font-size:calc(30px * var(--s));
   opacity:.22;
   animation:drift var(--d) linear infinite;
+  /* A negative delay starts each one partway through its own fall, so
+     they are already spread down the screen the instant they appear.
+     Without it, hiding and showing the layer restarts all six from the
+     top at once and the sky sits empty for several seconds. */
+  animation-delay:calc(var(--d) * var(--o));
 }
 @keyframes drift{
   0%{transform:translateY(-10vh) rotate(0deg);}
