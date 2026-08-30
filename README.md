@@ -95,8 +95,11 @@ toy built with some care about where a child's attention goes.
 - Star rating (1–3) based on moves relative to board size
 - Best score saved per theme + size combination
 - Sticker book, one sticker per cleared board
-- Gentle WebAudio sound effects — no audio files, mutable, remembered
-- Calm mode: hides background motion and the timer
+- Gentle WebAudio sound effects and a separate generated ambient music bed — no audio
+  files at all, both mutable, both remembered
+- Calm mode: hides background motion, confetti and the timer, on every screen
+- Every control explains itself in a help bubble on hover, focus or tap
+- A two-step "Start over" that erases stickers and scores without touching preferences
 - Keyboard playable: one Tab stop into the board, then arrow keys, `Home`/`End`, and
   `Enter`/`Space` to flip; `aria-label`s on every card; honours `prefers-reduced-motion`
 - Works on phone, tablet and desktop
@@ -122,22 +125,35 @@ modules, no bundler, so there is nothing to serve.
 ## Project structure
 
 ```
-index.html        markup for the three screens (home / game / win)
-styles.css        design tokens and layout
-js/content.js     decks and board sizes  ← edit this to re-skin the game
-js/i18n.js        every user-facing string
-js/engine.js      pure game state machine (no DOM)
-js/storage.js     localStorage wrapper
-js/audio.js       WebAudio blips
-js/confetti.js    emoji celebration
-js/ui.js          DOM rendering, timers, screen router
-js/main.js        entry point
-tests/            node tests for the engine, no runner required
+index.html             markup for the three screens: home / game / win
+styles.css             design tokens, layout and every animation
+
+js/content.js          the decks and the board sizes  ← edit this to re-skin the game
+js/i18n.js             every user-facing string, behind a t() call
+js/engine.js           the rules, as a pure state machine with no DOM
+js/storage.js          localStorage wrapper that survives private browsing
+js/audio.js            short WebAudio blips for flips, matches and the win
+js/music.js            the generated ambient bed
+js/confetti.js         emoji celebration and match sparkles
+js/tooltip.js          the help bubbles on hover, focus and tap
+js/ui.js               DOM rendering, timers, screen router - the only file that
+                       knows both about the rules and about the page
+js/main.js             entry point, waits for DOMContentLoaded
+
+tests/engine.test.js   node tests for the engine, no runner required
+
+favicon.svg            the mark, hand-written SVG
+favicon.ico            16 / 32 / 48 px fallback for browsers that ignore SVG icons
+apple-touch-icon.png   180 px icon for "add to home screen"
+.nojekyll              tells GitHub Pages to publish the files as they are
 ```
 
-The split is deliberate: `engine.js` has no DOM and no timers, so the rules can be
-tested in isolation, and `content.js` holds everything you would want to change to
-turn this into a different game.
+Load order matters and is fixed in `index.html`: `content` and `i18n` are data,
+`engine` and `storage` are logic, then `ui` wires them to the page and `main` starts it.
+
+The split is deliberate. `engine.js` has no DOM and no timers, so the rules can be
+tested in Node. `content.js` holds everything you would change to turn this into a
+different game. `i18n.js` holds every sentence, so a second language is one object.
 
 ### Tests
 
@@ -171,6 +187,38 @@ That is the whole change. The theme picker, the confetti and the sticker book al
 read from the same list.
 
 ---
+
+## How the site is published
+
+There is no GitHub Actions workflow, and there is no build step. The repository is
+served exactly as you see it:
+
+```
+git push  →  GitHub Pages builds from master, folder /  →  https://cvera08.github.io/memory-ldk/
+```
+
+Pages is configured in branch mode (**Settings → Pages → Deploy from a branch →
+`master` / `/ (root)`**), which is the older of the two publishing models GitHub
+offers. The other one runs an Actions workflow that produces the site. This project
+has nothing to produce: the files in the repository *are* the site, so a workflow
+would only add a moving part that can break.
+
+Every push to `master` triggers a rebuild that usually finishes in under a minute.
+
+### What `.nojekyll` is for
+
+Branch-mode Pages runs every site through **Jekyll** before publishing, because Pages
+began life as a Jekyll host. Jekyll silently ignores any file or folder whose name
+starts with an underscore, and it tries to interpret `{{ }}` and `{% %}` in files it
+thinks are templates.
+
+An empty `.nojekyll` file at the repository root turns that whole step off, so the
+files are copied verbatim.
+
+Nothing here currently starts with an underscore, so the site would publish correctly
+without it today. It is there so that the day someone adds `_something`, or a snippet
+of text containing curly braces, the site does not quietly break in a way that is
+genuinely annoying to diagnose.
 
 ## Roadmap
 
