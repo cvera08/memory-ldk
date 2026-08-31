@@ -62,17 +62,6 @@ audio files, emoji confetti, star scoring, sticker book, calm mode, keyboard sup
 
 ---
 
-## Post ideas
-
-- *"I built my daughter a memory game and it turned into a lesson about attention design."*
-  The anti-pattern list from kids' games, and the six concrete things done differently.
-- *"Zero dependencies, on purpose."* A project that must still work in 2031 with nobody maintaining it.
-- *"The engine has no DOM."* How a pure state machine let a browser game be unit-tested in Node.
-- *"Internationalise on day one, even if you only ship one language."* The cost curve of retrofitting i18n.
-- *"Difficulty that goes down."* Why an inverted difficulty curve is the right shape for a child.
-
----
-
 ## 2026-08-27 — Week 1: the settings taught me more than the game did
 
 Four changes this week, all of them triggered by one round of real feedback.
@@ -107,9 +96,86 @@ and watching two tests go red — a test suite you have never seen fail is decor
 hand-drawn SVG of two matching cards in the brand gradient, with a PNG touch icon
 rasterised by a small Python script rather than a design tool.
 
+---
+
+## 2026-08-31 — Week 2: the first real playtest, and what measurement settled
+
+The game went in front of the person it was built for. Three things came out of it.
+
+**The 1100 ms pause is right.** This was the single number I was least sure about and
+the one I could not reason my way to. Standard implementations flip a wrong pair back
+in roughly 600 ms; I had gone to 1100 on the theory that a six year old needs longer to
+actually encode two cards than an adult does. Verdict after a long session: long enough
+to hold the two cards in mind, short enough that wanting to try the next pair never
+turns into waiting for the game. Keeping it. Some numbers you can only get from a
+person using the thing.
+
+**The music was wrong, and the fix came from measuring, not from taste.** The first
+version was a generated melody: one note a second on a pentatonic random walk. Charming
+in isolation, grating within two minutes, and — this is the part I had not checked —
+each note was landing at roughly the same loudness as a game sound effect. A pitch every
+second, forever, as loud as the reward sound.
+
+I replaced it with something with no melody at all: a brown-noise bed, heavily
+low-passed so it reads as distant rain, with pad chords that take four and a half
+seconds to arrive and six and a half to leave, one every eleven seconds. Nothing has a
+beat. Nothing repeats on a period the ear can latch onto.
+
+Then I measured both, by tapping the audio graph with an `AnalyserNode` and reading RMS:
+
+| | peak RMS |
+| --- | --- |
+| old melody, per note | ~0.050 |
+| new ambient bed | 0.009 |
+| "match" sound effect | 0.038 |
+| win jingle | 0.066 |
+
+A quarter of a sound effect, five times quieter than what it replaced. The point is not
+the numbers themselves — it is that "the music is too loud" became a thing with a target
+instead of a thing with an opinion.
+
+**A bug that only exists in the transition.** Calm mode hides the drifting background
+with `display: none`, which resets a CSS animation. Turning it back on restarted all six
+floaters at 0% of their cycle — which is above the viewport — so they arrived bunched
+together six seconds later. Every static screenshot looked perfect; the defect lived
+entirely in the moment between two states. The fix is a distinct negative
+`animation-delay` per element, so each one begins partway through its own fall and the
+sky is populated the instant it reappears: five of six on screen at 80 ms, instead of
+zero of six for six seconds.
+
+**Also this week:** help bubbles on every control, written to say what the button does
+*and* what state it is in right now, shown on hover, on keyboard focus, and for a beat
+after a tap — because a tap is the only moment you can tell a tablet user what just
+happened. A two-step "Start over" so a child can reset her own scores without a parent
+opening developer tools, which erases progress but deliberately keeps preferences. And
+a real `favicon.ico` at three sizes, because the browser favicon cache ignores a hard
+refresh and a 404 on `/favicon.ico` leaves it showing whatever it had before.
+
+**Status:** the product is in an acceptable state. Everything from here is additive.
+
+---
+
 ## Post ideas
 
-- *"When users disagree about what a button does, it is doing two things."* The sound/music split.
-- *"Ninety lines of WebAudio beat a three-megabyte MP3."* Generated music from a pentatonic random walk.
-- *"The setting worked. It was still broken."* Discoverability as a correctness property.
+**On designing for attention**
+
+- *"I built my daughter a memory game and it turned into a lesson about attention design."*
+  The anti-pattern list from kids' games, and the concrete things done differently.
+- *"Difficulty that goes down."* Why an inverted difficulty curve is the right shape for a child.
+- *"1100 milliseconds."* One number I could not reason my way to, and the playtest that settled it.
+
+**On engineering**
+
+- *"Zero dependencies, on purpose."* A project that must still work in 2031 with nobody maintaining it.
+- *"The engine has no DOM."* How a pure state machine let a browser game be unit-tested in Node.
 - *"A test suite you have never seen fail is decoration."* Mutation-checking your own tests.
+- *"Internationalise on day one, even if you only ship one language."* The cost curve of retrofitting i18n.
+- *"Ninety lines of WebAudio beat a three-megabyte MP3."* Generated ambience with nothing to download.
+
+**On feedback and QA**
+
+- *"When users disagree about what a button does, it is doing two things."* The sound/music split.
+- *"The setting worked. It was still broken."* Discoverability as a correctness property.
+- *"The bug that only exists between two states."* Why every screenshot looked right and the
+  transition was broken — and what that says about screenshot-based testing.
+- *"Turn taste into a number."* Measuring perceived loudness with an AnalyserNode instead of arguing about it.
