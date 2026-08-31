@@ -223,6 +223,9 @@ genuinely annoying to diagnose.
 ## Roadmap
 
 - [ ] Spanish / English language switch
+- [ ] Show the board size on each sticker. Right now two crowns earned on a Little
+      board and on a Super board look identical, so the sticker book records *that*
+      you won but not *what* you beat — which is the part worth being proud of.
 - [ ] Two-player mode (take turns, keep score)
 - [ ] Optional photo decks (family faces instead of emoji)
 - [ ] Installable as a PWA for offline play on a tablet
