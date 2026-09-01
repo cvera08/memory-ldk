@@ -52,10 +52,24 @@ jobs:
 
       - uses: actions/configure-pages@v5
 
-      # The repository is the site, so the whole folder is the artifact.
+      # Publish only what the browser needs. The readme, the build log, the
+      # tests and this workflow stay in the repository where they belong.
+      - name: Assemble the site
+        run: |
+          mkdir -p _site
+          cp index.html styles.css favicon.svg favicon.ico apple-touch-icon.png _site/
+          cp -R js _site/
+
+      # The same wiring suite, pointed at the folder about to go live: a file
+      # that was never copied in fails here instead of on the live site.
+      - name: Verify the assembled site
+        env:
+          SITE_ROOT: _site
+        run: node tests/assets.test.js
+
       - uses: actions/upload-pages-artifact@v4
         with:
-          path: '.'
+          path: _site
 
       - id: deployment
         uses: actions/deploy-pages@v4

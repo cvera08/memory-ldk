@@ -15,7 +15,12 @@ var fs = require('fs');
 var path = require('path');
 
 var ROOT = path.join(__dirname, '..');
-var html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+
+/* By default the checks run against the repository. Point SITE_ROOT at an
+   assembled folder and the same checks verify what is about to be deployed,
+   which is how a file that was never copied into the artifact gets caught. */
+var SITE = process.env.SITE_ROOT ? path.resolve(process.env.SITE_ROOT) : ROOT;
+var html = fs.readFileSync(path.join(SITE, 'index.html'), 'utf8');
 
 global.window = {};
 require('../js/content.js');
@@ -60,13 +65,13 @@ function scriptOrder() {
 check('every file the page asks for exists on disk', function () {
   localRefs().forEach(function (ref) {
     var file = ref.split('?')[0];
-    ok(fs.existsSync(path.join(ROOT, file)), 'index.html references missing file: ' + file);
+    ok(fs.existsSync(path.join(SITE, file)), 'index.html references missing file: ' + file);
   });
 });
 
 check('no javascript module is left orphaned', function () {
   var loaded = scriptOrder();
-  fs.readdirSync(path.join(ROOT, 'js')).forEach(function (name) {
+  fs.readdirSync(path.join(SITE, 'js')).forEach(function (name) {
     if (!/\.js$/.test(name)) return;
     ok(loaded.indexOf('js/' + name) !== -1, 'js/' + name + ' exists but is never loaded');
   });
@@ -86,7 +91,7 @@ check('modules load in dependency order', function () {
 
 check('the icon set browsers look for is complete', function () {
   ['favicon.ico', 'favicon.svg', 'apple-touch-icon.png'].forEach(function (icon) {
-    ok(fs.existsSync(path.join(ROOT, icon)), 'missing ' + icon);
+    ok(fs.existsSync(path.join(SITE, icon)), 'missing ' + icon);
     ok(html.indexOf(icon) !== -1, icon + ' exists but is not declared in index.html');
   });
 });
@@ -205,6 +210,7 @@ failures.forEach(function (f) {
   console.log('  FAIL  ' + f.name);
   console.log('        ' + f.message);
 });
-console.log('  page wiring: ' + passed + ' passed, ' + failures.length + ' failed');
+console.log('  page wiring' + (SITE === ROOT ? '' : ' (' + path.basename(SITE) + ')') +
+            ': ' + passed + ' passed, ' + failures.length + ' failed');
 console.log('');
 process.exit(failures.length ? 1 : 0);
