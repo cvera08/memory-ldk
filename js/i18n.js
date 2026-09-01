@@ -44,7 +44,6 @@
       'win.again': 'Play again',
       'win.menu': 'Change theme',
       'win.record': 'New best score for this board!',
-      'win.sticker': 'You earned a new sticker!',
 
       'stickers.title': 'My sticker book',
       'stickers.sub': 'You earn one sticker every time you clear a board.',

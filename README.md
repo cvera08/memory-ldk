@@ -140,7 +140,9 @@ js/ui.js               DOM rendering, timers, screen router - the only file that
                        knows both about the rules and about the page
 js/main.js             entry point, waits for DOMContentLoaded
 
-tests/engine.test.js   node tests for the engine, no runner required
+tests/run.js           runs both suites
+tests/engine.test.js   the rules, in isolation
+tests/assets.test.js   the page wiring and the copy table
 
 favicon.svg            the mark, hand-written SVG
 favicon.ico            16 / 32 / 48 px fallback for browsers that ignore SVG icons
@@ -158,13 +160,22 @@ different game. `i18n.js` holds every sentence, so a second language is one obje
 ### Tests
 
 ```bash
-node tests/engine.test.js
+node tests/run.js
 ```
 
-No test runner and nothing to install. The suite gives the browser modules a fake
-`window`, then exercises the rules directly: deck integrity, shuffling, match and
-mismatch handling, board locking, streaks, win detection and the star thresholds.
-The RNG is injectable, so every board in the suite is reproducible from its seed.
+No test runner and nothing to install. Two suites, in two different registers:
+
+- **`engine.test.js`** gives the browser modules a fake `window` and exercises the
+  rules directly: deck integrity, shuffling, match and mismatch handling, board
+  locking, streaks, win detection and the star thresholds. The RNG is injectable, so
+  every board in the suite is reproducible from its seed.
+- **`assets.test.js`** checks the wiring rather than the logic: that every file
+  `index.html` asks for exists, that no module is orphaned, that the script load order
+  still satisfies the dependencies, that the icon set is complete, and that every copy
+  key used in the source has a string — and that no string in the table is dead.
+
+The second suite exists because those are the failures that survive a green unit-test
+run and only show up as a blank page in production.
 
 ### Adding your own theme
 
