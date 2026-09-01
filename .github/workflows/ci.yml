@@ -1,0 +1,61 @@
+# Tests run on every push and every pull request.
+# The site is only deployed when they pass, and only from master.
+name: ci
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+# Least privilege by default; the deploy job asks for what it needs.
+permissions:
+  contents: read
+
+# One deployment at a time. Queued rather than cancelled, so a run that
+# is already publishing is never left half finished.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  test:
+    name: tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      # No install step: the project has no dependencies, by design.
+      - name: Run the suites
+        run: node tests/run.js
+
+  deploy:
+    name: deploy to github pages
+    needs: test
+    if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/configure-pages@v5
+
+      # The repository is the site, so the whole folder is the artifact.
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: '.'
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
