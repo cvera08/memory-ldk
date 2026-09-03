@@ -16,6 +16,7 @@
       'home.sound': 'Sound effects',
       'home.music': 'Music',
       'home.calm': 'Calm mode',
+      'home.language': 'Language',
 
       'a11y.hidden': 'Hidden card {n}',
       'toggle.on': 'on',
@@ -103,6 +104,104 @@
       'praise.1': 'You finished it! Great effort.',
 
       'credits': 'Made with 💜 by LDK'
+    },
+
+    es: {
+      'home.subtitle': '¡Dá vuelta dos cartas. Encontrá el par. Llená el tablero de amigos!',
+      'home.pickTheme': '1. Elegí un tema',
+      'home.pickSize': '2. ¿Cuántas cartas?',
+      'home.play': 'Jugar',
+      'home.stickers': 'Mis figuritas',
+      'home.sound': 'Sonidos',
+      'home.music': 'Música',
+      'home.calm': 'Modo calmo',
+      'home.language': 'Idioma',
+
+      'a11y.hidden': 'Carta tapada {n}',
+      'toggle.on': 'sí',
+      'toggle.off': 'no',
+
+      'tip.sound': 'Soniditos cuando das vuelta una carta y cuando encontrás un par.',
+      'tip.music': 'Un sonido suave de fondo que ayuda a concentrarse.',
+      'tip.calm': 'Esconde el fondo en movimiento, el papel picado y el reloj.',
+      'tip.peek': 'Muestra todas las cartas tapadas un ratito. Tenés pocas.',
+      'tip.restart': 'Mezcla este tablero y lo empieza de nuevo.',
+      'tip.stickers': 'Ganás una figurita cada vez que terminás un tablero.',
+      'tip.back': 'Volver y elegir otro tema.',
+      'tip.on': 'Ahora está activado. Tocá para desactivarlo.',
+      'tip.off': 'Ahora está desactivado. Tocá para activarlo.',
+      'tip.reset': 'Borra las figuritas y los récords guardados en este dispositivo.',
+
+      'hud.pairs': 'Pares',
+      'hud.moves': 'Jugadas',
+      'hud.time': 'Tiempo',
+
+      'game.peek': 'Espiar',
+      'game.restart': 'Mezclar otra vez',
+
+      'win.title': '¡Los encontraste a todos!',
+      'win.moves': 'Jugadas',
+      'win.time': 'Tiempo',
+      'win.streak': 'Mejor racha',
+      'win.again': 'Jugar de nuevo',
+      'win.menu': 'Cambiar de tema',
+      'win.record': '¡Nuevo récord en este tablero!',
+
+      'stickers.title': 'Mi álbum de figuritas',
+      'stickers.sub': 'Ganás una figurita cada vez que completás un tablero.',
+      'stickers.empty': 'Todavía no hay figuritas. ¡Ganá una partida para la primera!',
+      'reset.button': 'Empezar de cero',
+      'reset.confirm': '¿Borrar todas las figuritas y los récords? No se puede deshacer.',
+      'reset.yes': 'Sí, borrar todo',
+      'reset.cancel': 'Dejarlos',
+      'reset.done': '¡Listo! Todo de nuevo desde cero.',
+
+      'level.little': 'Chiquito',
+      'level.medium': 'Mediano',
+      'level.big': 'Grande',
+      'level.super': 'Súper',
+      'level.hint': '{pairs} pares - {cards} cartas',
+
+      'coach.start': [
+        'Tomate tu tiempo. ¡Mirá bien!',
+        '¿Lista? Acordate dónde se esconde cada amigo.',
+        'Los ojos tranquilos encuentran más pares.'
+      ],
+      'coach.match': [
+        '¡Sí! ¡Un par!',
+        '¡Qué buena memoria!',
+        '¡Los encontraste!',
+        '¡Hermoso!'
+      ],
+      'coach.streak': [
+        '¡{n} seguidos! ¡Guau!',
+        '¡Racha de {n}! ¡Seguí así!',
+        '¡{n} pares seguidos!'
+      ],
+      'coach.miss': [
+        'Todavía no. Acordate de esas dos.',
+        '¡Casi! Guardalas en la cabeza.',
+        'Probá de nuevo, te estás aprendiendo el tablero.'
+      ],
+      'coach.close': [
+        '¡Quedan solo {n} pares!',
+        '¡Falta poquito! {n} para terminar.',
+        '¡{n} más y ganás!'
+      ],
+      'coach.last': [
+        '¡El último par! ¡Vos podés!',
+        '¡Queda uno!'
+      ],
+      'coach.peek': [
+        'Una espiadita... ¡ahora acordate!',
+        'Mirá rápido y guardalo en la mente.'
+      ],
+
+      'praise.3': '¡Memoria increíble!',
+      'praise.2': '¡Muy bien hecho!',
+      'praise.1': '¡Lo terminaste! Buen esfuerzo.',
+
+      'credits': 'Hecho con 💜 por LDK'
     }
   };
 

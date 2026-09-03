@@ -27,6 +27,7 @@
   }
 
   var DEFAULT_SETTINGS = {
+    lang: null,
     sound: true,
     music: false,
     calm: false,

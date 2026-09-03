@@ -56,6 +56,73 @@
   }
 
   /* ---------------------------------------------------------
+     language
+
+     Only two languages today, so a segmented control beats a select:
+     both options are visible, and each is a proper tap target.
+     --------------------------------------------------------- */
+
+  var LANG_NAMES = { en: 'EN', es: 'ES' };
+
+  function renderLanguage() {
+    el.langSwitch.innerHTML = '';
+    LDK.i18n.available().forEach(function (code) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'lang__option' + (code === LDK.i18n.lang ? ' is-selected' : '');
+      btn.textContent = LANG_NAMES[code] || code.toUpperCase();
+      btn.lang = code;
+      btn.setAttribute('role', 'radio');
+      btn.setAttribute('aria-checked', String(code === LDK.i18n.lang));
+      btn.addEventListener('click', function () { setLanguage(code); });
+      el.langSwitch.appendChild(btn);
+    });
+    el.langSwitch.setAttribute('aria-label', t('home.language'));
+  }
+
+  function setLanguage(code, silent) {
+    if (code === LDK.i18n.lang && !silent) return;
+    LDK.i18n.lang = code;
+    document.documentElement.lang = LDK.i18n.lang;
+    if (!silent) LDK.storage.saveSettings({ lang: LDK.i18n.lang });
+    repaintCopy();
+  }
+
+  /**
+   * Every string on screen is redrawn from the table. Cheap enough to do
+   * wholesale, and it means a new piece of copy can never be the one that
+   * forgets to follow a language change.
+   */
+  function repaintCopy() {
+    LDK.i18n.apply(document);
+    renderLanguage();
+    renderDecks();
+    renderLevels();
+    syncToggles();
+    LDK.tip.hide();
+
+    if (!state.engine) return;
+
+    var deck = LDK.getDeck(state.deckId);
+    el.deckName.textContent = LDK.deckName(deck);
+    Array.prototype.forEach.call(el.board.children, function (node, i) {
+      var card = state.engine.cards[i];
+      var up = node.classList.contains('is-up') || node.classList.contains('is-matched');
+      node.setAttribute('aria-label', up ? LDK.cardLabel(card) : t('a11y.hidden', { n: i + 1 }));
+    });
+  }
+
+  /** Spanish for a Spanish browser, English for everything else. */
+  function detectLanguage() {
+    var tags = (window.navigator.languages || [window.navigator.language || 'en']);
+    for (var i = 0; i < tags.length; i++) {
+      var code = String(tags[i]).toLowerCase().split('-')[0];
+      if (LDK.i18n.available().indexOf(code) !== -1) return code;
+    }
+    return 'en';
+  }
+
+  /* ---------------------------------------------------------
      home screen
      --------------------------------------------------------- */
 
@@ -532,6 +599,10 @@
         btn.setAttribute('aria-pressed', String(on));
         btn.setAttribute('aria-label', label + ': ' + t(on ? 'toggle.on' : 'toggle.off'));
         btn.querySelector('.chip__glyph').textContent = spec.glyph(on);
+        /* The compact buttons have no text node; the labelled ones must
+           follow a language change like everything else on screen. */
+        var text = btn.querySelector('.chip__text');
+        if (text) text.textContent = label;
       });
     });
   }
@@ -542,6 +613,7 @@
 
   function cacheDom() {
     el = {
+      langSwitch: $('lang-switch'),
       deckGrid: $('deck-grid'),
       levelRow: $('difficulty-row'),
       levelHint: $('difficulty-hint'),
@@ -652,6 +724,10 @@
     var saved = LDK.storage.getSettings();
     state.deckId = saved.deck || LDK.DEFAULT_DECK;
     state.levelId = saved.level || LDK.DEFAULT_LEVEL;
+
+    /* A remembered choice wins; otherwise follow the browser. */
+    setLanguage(saved.lang || detectLanguage(), true);
+    renderLanguage();
 
     renderSettings(el.settingsHome, false);
     renderSettings(el.settingsGame, true);

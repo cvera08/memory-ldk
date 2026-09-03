@@ -94,6 +94,8 @@ toy built with some care about where a child's attention goes.
 
 ## Features
 
+- English and Spanish, switchable mid-board without losing the game, remembered, and
+  guessed from the browser on a first visit
 - 7 themes × 4 board sizes, reshuffled and re-sampled every run
 - 3D card flip, match sparkles and an emoji confetti finish
 - Star rating (1–3) based on moves relative to board size
@@ -133,7 +135,7 @@ index.html             markup for the three screens: home / game / win
 styles.css             design tokens, layout and every animation
 
 js/content.js          the decks and the board sizes  ← edit this to re-skin the game
-js/i18n.js             every user-facing string, behind a t() call
+js/i18n.js             every user-facing string, in English and Spanish
 js/engine.js           the rules, as a pure state machine with no DOM
 js/storage.js          localStorage wrapper that survives private browsing
 js/audio.js            short WebAudio blips for flips, matches and the win
@@ -160,7 +162,8 @@ Load order matters and is fixed in `index.html`: `content` and `i18n` are data,
 
 The split is deliberate. `engine.js` has no DOM and no timers, so the rules can be
 tested in Node. `content.js` holds everything you would change to turn this into a
-different game. `i18n.js` holds every sentence, so a second language is one object.
+different game. `i18n.js` holds every sentence in both languages, and the test suite fails if the two
+tables ever drift apart.
 
 ### Tests
 
@@ -190,17 +193,17 @@ Append one object to `LDK.DECKS` in `js/content.js`:
 {
   id: 'space',
   icon: '🚀',
-  name: 'Space',
+  name: { en: 'Space', es: 'Espacio' },
   cards: [
-    { emoji: '🚀', label: 'Rocket' },
-    { emoji: '🪐', label: 'Planet' }
+    { emoji: '🚀', label: { en: 'Rocket', es: 'Cohete' } },
+    { emoji: '🪐', label: { en: 'Planet', es: 'Planeta' } }
     // ...at least 12 for the Super board
   ]
 }
 ```
 
 That is the whole change. The theme picker, the confetti and the sticker book all
-read from the same list.
+read from the same list, and the test suite will tell you if you forgot a translation.
 
 ---
 
@@ -256,7 +259,7 @@ removed. Dead configuration that looks meaningful is worse than no configuration
 
 ## Roadmap
 
-- [ ] Spanish / English language switch
+- [x] Spanish / English language switch
 - [ ] Show the board size on each sticker. Right now two crowns earned on a Little
       board and on a Super board look identical, so the sticker book records *that*
       you won but not *what* you beat — which is the part worth being proud of.
