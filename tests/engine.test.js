@@ -73,10 +73,14 @@ check('no deck repeats an emoji within itself', function () {
   });
 });
 
-check('every card has a label for screen readers', function () {
+check('every card and deck is named in every language', function () {
+  var languages = ['en', 'es'];
   LDK.DECKS.forEach(function (deck) {
-    deck.cards.forEach(function (card) {
-      ok(card.label && card.label.length > 0, deck.id + ' has a card with no label');
+    languages.forEach(function (lang) {
+      ok(deck.name[lang], deck.id + ' has no name in ' + lang);
+      deck.cards.forEach(function (card) {
+        ok(card.label[lang], deck.id + ' card ' + card.emoji + ' has no label in ' + lang);
+      });
     });
   });
 });

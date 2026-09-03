@@ -70,7 +70,7 @@
       btn.innerHTML =
         '<span class="deck__icon" aria-hidden="true">' + deck.icon + '</span>' +
         '<span class="deck__name"></span>';
-      btn.querySelector('.deck__name').textContent = deck.name;
+      btn.querySelector('.deck__name').textContent = LDK.deckName(deck);
       btn.addEventListener('click', function () {
         state.deckId = deck.id;
         LDK.storage.saveSettings({ deck: deck.id });
@@ -128,7 +128,7 @@
       btn.className = 'card';
       btn.dataset.index = String(index);
       btn.tabIndex = index === 0 ? 0 : -1;
-      btn.setAttribute('aria-label', 'Hidden card ' + (index + 1));
+      btn.setAttribute('aria-label', t('a11y.hidden', { n: index + 1 }));
       btn.innerHTML =
         '<span class="card__inner">' +
           '<span class="card__face card__face--back" aria-hidden="true">✨</span>' +
@@ -214,7 +214,7 @@
     if (!node) return;
     var card = state.engine.cards[index];
     node.classList.toggle('is-up', up);
-    node.setAttribute('aria-label', up ? card.label : 'Hidden card ' + (index + 1));
+    node.setAttribute('aria-label', up ? LDK.cardLabel(card) : t('a11y.hidden', { n: index + 1 }));
   }
 
   function updateHud() {
@@ -273,7 +273,7 @@
     state.busy = false;
 
     el.deckIcon.textContent = deck.icon;
-    el.deckName.textContent = deck.name;
+    el.deckName.textContent = LDK.deckName(deck);
     el.peekCount.textContent = String(state.peeksLeft);
     el.btnPeek.disabled = false;
 

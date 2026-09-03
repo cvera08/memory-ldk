@@ -17,6 +17,7 @@
       'home.music': 'Music',
       'home.calm': 'Calm mode',
 
+      'a11y.hidden': 'Hidden card {n}',
       'toggle.on': 'on',
       'toggle.off': 'off',
 
