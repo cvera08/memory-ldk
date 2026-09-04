@@ -155,6 +155,67 @@ refresh and a 404 on `/favicon.ico` leaves it showing whatever it had before.
 
 ---
 
+## 2026-09-04 — Week 3: a deploy that can say no, and a second language
+
+**The pipeline had no opinion.** Pages was publishing in branch mode: every push went
+straight to the live site. The tests existed and were good, and nothing anywhere
+required them to pass. A test suite that cannot block a release is a suggestion.
+
+Moving to a workflow deploy fixed that, and the shape of the fix is the interesting
+part. It is not Actions *instead of* Pages — it is still Pages. Branch mode was already
+running an Actions workflow; GitHub generates a hidden one called
+`pages-build-deployment`, which is why runs show up in a repository with no workflow
+files of its own. The change was taking that job off GitHub's hands and writing it
+down, so it could be given a precondition.
+
+What that bought, concretely:
+
+- Red tests mean no deploy. The previous version stays up.
+- The published folder is assembled rather than mirrored. The readme, the build log,
+  the tests and the workflow live in the repository but are not served to the web.
+  Four fewer things reachable from a URL, for free.
+- **The artifact is tested, not just the source.** `assets.test.js` takes a `SITE_ROOT`
+  and runs a second time against the assembled folder. A file that was never copied in
+  fails the build instead of becoming a 404 for a six year old. This is the piece I
+  would keep in every project: verifying the thing you are about to ship, not the
+  thing you built it from.
+- Pull requests run the tests without deploying.
+- A badge that means something.
+
+**A test suite that found real dirt.** The new wiring suite went looking for the
+failures unit tests structurally cannot see — a script tag pointing at a file that does
+not exist, an orphaned module, a load order quietly broken by a reorder, a copy key
+with no string. It immediately found a dead string in the table (`win.sticker`, defined
+and never rendered) and I deleted it. Both directions are checked now: copy used but
+missing, and copy present but unused. Both were mutation-tested by breaking them on
+purpose.
+
+**And `.nojekyll` deleted itself, in a way.** Workflow mode has no Jekyll step, so the
+file that existed to switch Jekyll off stopped doing anything. Dead configuration that
+looks meaningful is worse than no configuration, so it is gone — and the README now
+explains what it was, in case someone wonders why a project like this ever had one.
+
+**Spanish, and the part that was already paid for.** Every sentence had lived behind a
+`t()` call since day one, so the UI translation was genuinely one object. What was
+*not* free: deck names and card labels were plain strings in `content.js`. Those became
+`{ en, es }` tables, which kept the promise that a deck is one self-contained object
+you can copy and translate — and the suite now fails if the two tables ever drift
+apart, or if a deck ships without a name in one of them.
+
+The switch works mid-board without disturbing the game: the language change repaints
+every string from the table, including the `aria-label` on each card, and the run
+carries on. Argentine Spanish, so the ladybug is a *vaquita de San Antonio* and the
+kite is a *barrilete*.
+
+This is the day-one i18n bet paying out. Retrofitting it would have meant touching
+every file; instead it touched two.
+
+**Also:** stickers now record the board size they were won on, using the same dots as
+the size picker, so a Super win never looks like a Little one. Stickers saved before
+this change simply render without dots — no migration.
+
+---
+
 ## Post ideas
 
 **On designing for attention**
@@ -173,6 +234,12 @@ refresh and a 404 on `/favicon.ico` leaves it showing whatever it had before.
 - *"Ninety lines of WebAudio beat a three-megabyte MP3."* Generated ambience with nothing to download.
 
 **On feedback and QA**
+
+- *"Test the artifact, not the source."* Running the same suite against the assembled
+  folder, and the class of bug that only that catches.
+- *"A test suite that cannot block a release is a suggestion."* Branch-mode Pages to a
+  gated workflow deploy, and what it actually bought.
+- *"Internationalisation on day one, three weeks later."* The bill that never arrived.
 
 - *"When users disagree about what a button does, it is doing two things."* The sound/music split.
 - *"The setting worked. It was still broken."* Discoverability as a correctness property.
