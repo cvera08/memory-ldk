@@ -100,7 +100,8 @@ toy built with some care about where a child's attention goes.
 - 3D card flip, match sparkles and an emoji confetti finish
 - Star rating (1–3) based on moves relative to board size
 - Best score saved per theme + size combination
-- Sticker book, one sticker per cleared board
+- Sticker book, one sticker per cleared board, each marked with the board size it was
+  won on — the same dots the size picker uses, so a Super win never looks like a Little one
 - Gentle WebAudio sound effects and a separate generated ambient music bed — no audio
   files at all, both mutable, both remembered
 - Calm mode: hides background motion, confetti and the timer, on every screen
@@ -260,9 +261,6 @@ removed. Dead configuration that looks meaningful is worse than no configuration
 ## Roadmap
 
 - [x] Spanish / English language switch
-- [ ] Show the board size on each sticker. Right now two crowns earned on a Little
-      board and on a Super board look identical, so the sticker book records *that*
-      you won but not *what* you beat — which is the part worth being proud of.
 - [ ] Two-player mode (take turns, keep score)
 - [ ] Optional photo decks (family faces instead of emoji)
 - [ ] Installable as a PWA for offline play on a tablet

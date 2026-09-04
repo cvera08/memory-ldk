@@ -536,7 +536,16 @@ body{
   text-align:center;
 }
 .sticker__emoji{font-size:30px;line-height:1;display:block;}
-.sticker__date{font-size:10px;color:var(--ink-soft);margin-top:4px;display:block;}
+.sticker__level{
+  display:block;
+  margin-top:3px;
+  font-size:11px;
+  letter-spacing:1.5px;
+  line-height:1;
+  color:var(--purple);
+}
+.sticker__level[hidden]{display:none;}
+.sticker__date{font-size:10px;color:var(--ink-soft);margin-top:3px;display:block;}
 
 .modal__foot{margin-top:18px;padding-top:14px;border-top:2px dashed var(--line);text-align:center;}
 .link-btn{

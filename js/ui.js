@@ -48,6 +48,11 @@
     window.scrollTo({ top: 0, behavior: 'auto' });
   }
 
+  /** Board size as dots: one per two pairs, so bigger boards read as more. */
+  function levelDots(level) {
+    return new Array(level.pairs / 2 + 1).join('•');
+  }
+
   function coach(key, vars) {
     el.coach.textContent = t(key, vars);
     el.coach.classList.remove('is-pop');
@@ -158,7 +163,7 @@
       btn.setAttribute('aria-checked', String(level.id === state.levelId));
       btn.innerHTML =
         '<span class="pill__name"></span>' +
-        '<span class="pill__dots" aria-hidden="true">' + new Array(level.pairs / 2 + 1).join('•') + '</span>';
+        '<span class="pill__dots" aria-hidden="true">' + levelDots(level) + '</span>';
       btn.querySelector('.pill__name').textContent = t('level.' + level.id);
       btn.addEventListener('click', function () {
         state.levelId = level.id;
@@ -449,7 +454,7 @@
       seconds: state.elapsed,
       stars: stars
     });
-    LDK.storage.addSticker(deck.icon);
+    LDK.storage.addSticker(deck.icon, state.levelId);
     refreshStickerCount();
 
     el.winSticker.textContent = deck.icon;
@@ -483,11 +488,31 @@
     var list = LDK.storage.getStickers();
     el.stickerGrid.innerHTML = '';
     list.forEach(function (item) {
+      var level = item.level ? LDK.getLevel(item.level) : null;
       var box = document.createElement('div');
       box.className = 'sticker';
       box.innerHTML =
         '<span class="sticker__emoji" aria-hidden="true">' + item.emoji + '</span>' +
+        '<span class="sticker__level"></span>' +
         '<span class="sticker__date"></span>';
+
+      /* The same dots the board-size pills use, so the two read as one scale. */
+      var levelNode = box.querySelector('.sticker__level');
+      if (level) {
+        levelNode.textContent = levelDots(level);
+        levelNode.setAttribute('aria-hidden', 'true');
+        box.title = t('level.' + level.id) + ' - ' + t('level.hint', {
+          pairs: level.pairs,
+          cards: level.pairs * 2
+        });
+      } else {
+        levelNode.hidden = true;
+      }
+
+      var label = level
+        ? t('stickers.item', { level: t('level.' + level.id), date: item.date })
+        : item.date;
+      box.setAttribute('aria-label', label);
       box.querySelector('.sticker__date').textContent = item.date;
       el.stickerGrid.appendChild(box);
     });

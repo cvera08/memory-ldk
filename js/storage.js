@@ -91,9 +91,17 @@
       }
     },
 
-    addSticker: function (emoji) {
+    /**
+     * A sticker records the board it was won on, not just the theme.
+     * Older stickers have no `level` and simply render without one.
+     */
+    addSticker: function (emoji, levelId) {
       var list = this.getStickers();
-      list.unshift({ emoji: emoji, date: new Date().toISOString().slice(0, 10) });
+      list.unshift({
+        emoji: emoji,
+        level: levelId || null,
+        date: new Date().toISOString().slice(0, 10)
+      });
       if (list.length > MAX_STICKERS) list.length = MAX_STICKERS;
       write('stickers', list);
       return list;
