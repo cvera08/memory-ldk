@@ -392,6 +392,10 @@
     updateHud();
     result.indices.forEach(function (i) {
       var node = cardNode(i);
+      /* `is-matched` takes over the flipped state; leaving `is-up` behind
+         made a matched card look, to any code reading the DOM, exactly
+         like a card being peeked at. */
+      node.classList.remove('is-up');
       node.classList.add('is-matched');
       node.disabled = true;
       LDK.sparkle(node);
