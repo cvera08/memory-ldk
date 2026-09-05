@@ -21,7 +21,13 @@
     startedAt: 0,
     elapsed: 0,
     tickId: null,
-    busy: false
+    busy: false,
+
+    /* Anything the page draws once has to be remembered, or a language
+       change cannot redraw it. See repaintCopy(). */
+    coachKey: null,
+    coachVars: null,
+    win: null
   };
 
   /* Persisted preferences, mirrored by every toggle button on screen. */
@@ -54,6 +60,8 @@
   }
 
   function coach(key, vars) {
+    state.coachKey = key;
+    state.coachVars = vars || null;
     el.coach.textContent = t(key, vars);
     el.coach.classList.remove('is-pop');
     void el.coach.offsetWidth;
@@ -105,6 +113,12 @@
     renderLevels();
     syncToggles();
     LDK.tip.hide();
+
+    /* The win panel and the coach line are written by hand rather than
+       from a data-i18n attribute, so apply() cannot reach them. */
+    paintWin();
+    if (state.coachKey) el.coach.textContent = t(state.coachKey, state.coachVars);
+    if (!el.modal.hidden) renderStickers();
 
     if (!state.engine) return;
 
@@ -343,6 +357,7 @@
     state.engine = LDK.createEngine({ pool: LDK.poolFor(deck), pairs: level.pairs });
     state.peeksLeft = level.peeks;
     state.busy = false;
+    state.win = null;
 
     el.deckIcon.textContent = deck.icon;
     el.deckName.textContent = LDK.deckName(deck);
@@ -457,23 +472,39 @@
     LDK.storage.addSticker(deck.icon, state.levelId);
     refreshStickerCount();
 
-    el.winSticker.textContent = deck.icon;
-    el.winPraise.textContent = t('praise.' + stars);
-    el.winMoves.textContent = String(stats.moves);
-    el.winTime.textContent = clock(state.elapsed);
-    el.winStreak.textContent = String(stats.bestStreak);
-    el.winRecord.textContent = t('win.record');
-    el.winRecord.hidden = !isRecord;
-
-    Array.prototype.forEach.call(el.winStars.children, function (star, i) {
-      star.classList.toggle('is-off', i >= stars);
-    });
+    state.win = {
+      icon: deck.icon,
+      stars: stars,
+      moves: stats.moves,
+      seconds: state.elapsed,
+      streak: stats.bestStreak,
+      record: isRecord
+    };
+    paintWin();
 
     window.setTimeout(function () {
       showScreen('win');
       LDK.confetti(LDK.poolFor(deck).map(function (c) { return c.emoji; }), 40);
       state.busy = false;
     }, WIN_DELAY_MS);
+  }
+
+  /** Draws the win panel from the stored result, in the current language. */
+  function paintWin() {
+    var win = state.win;
+    if (!win) return;
+
+    el.winSticker.textContent = win.icon;
+    el.winPraise.textContent = t('praise.' + win.stars);
+    el.winMoves.textContent = String(win.moves);
+    el.winTime.textContent = clock(win.seconds);
+    el.winStreak.textContent = String(win.streak);
+    el.winRecord.textContent = t('win.record');
+    el.winRecord.hidden = !win.record;
+
+    Array.prototype.forEach.call(el.winStars.children, function (star, i) {
+      star.classList.toggle('is-off', i >= win.stars);
+    });
   }
 
   /* ---------------------------------------------------------
