@@ -180,8 +180,10 @@ No test runner and nothing to install. Two suites, in two different registers:
   every board in the suite is reproducible from its seed.
 - **`assets.test.js`** checks the wiring rather than the logic: that every file
   `index.html` asks for exists, that no module is orphaned, that the script load order
-  still satisfies the dependencies, that the icon set is complete, and that every copy
-  key used in the source has a string — and that no string in the table is dead.
+  still satisfies the dependencies, that the icon set is complete, that every copy key
+  used in the source has a string, that no string in the table is dead, that both
+  languages carry the same keys, and that every hand-written translated string lives
+  in a function the language switch actually re-runs.
 
 The second suite exists because those are the failures that survive a green unit-test
 run and only show up as a blank page in production.

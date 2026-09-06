@@ -203,6 +203,81 @@ check('every deck and level has a name the page can show', function () {
   });
 });
 
+/* ---------------------------------------------------------- repaint contract */
+
+/*
+ * A language switch has to redraw every string on screen. Strings written
+ * from a `data-i18n` attribute are handled wholesale by i18n.apply(); the
+ * ones the UI writes by hand are not, and a missed one silently strands a
+ * sentence in the previous language.
+ *
+ * That is a real bug this project shipped: the win panel kept its English
+ * praise and record line after switching to Spanish, because both were
+ * written once when the board was cleared and never touched again.
+ *
+ * There is no DOM here to catch it by playing, so the source is checked
+ * instead: every hand-written translated string must live in a function
+ * that is on this list, and every function on this list is one that
+ * repaintCopy() re-runs. Adding a new painter fails the suite on purpose,
+ * so somebody has to decide whether a language change reaches it.
+ */
+var REPAINTERS = [
+  'coach',            // via repaintCopy, which re-resolves the stored key
+  'renderLanguage', // called by repaintCopy
+  'renderDecks',    // called by repaintCopy
+  'renderLevels',   // called by repaintCopy
+  'renderStickers', // called by repaintCopy when the album is open
+  'paintWin',       // called by repaintCopy
+  'syncToggles',    // called by repaintCopy
+  'renderSettings', // its labels are rewritten by syncToggles
+  'renderBoard',    // rebuilt on every new game
+  'startGame',      // rebuilt on every new game
+  'paintFaceUp',    // aria-labels, redone by repaintCopy
+  'repaintCopy'
+];
+
+check('every hand-written translated string sits in a repainted function', function () {
+  var source = fs.readFileSync(path.join(ROOT, 'js', 'ui.js'), 'utf8');
+  var lines = source.split('\n');
+
+  /* Map each line number to the innermost function declared around it. */
+  var owner = [];
+  var stack = [];
+  var depth = 0;
+  lines.forEach(function (line, i) {
+    var declared = line.match(/function\s+([A-Za-z_$][\w$]*)\s*\(/);
+    if (declared) stack.push({ name: declared[1], depth: depth });
+    owner[i] = stack.length ? stack[stack.length - 1].name : '(top level)';
+    depth += (line.split('{').length - 1) - (line.split('}').length - 1);
+    while (stack.length && depth <= stack[stack.length - 1].depth) stack.pop();
+  });
+
+  /* Anything that puts a translated string on the page. */
+  var writes = /(textContent\s*=|setAttribute\('aria-label',)[^;]*(\bt\(|LDK\.deckName\(|LDK\.cardLabel\()/;
+  var stranded = [];
+  lines.forEach(function (line, i) {
+    if (!writes.test(line)) return;
+    if (REPAINTERS.indexOf(owner[i]) === -1) {
+      stranded.push('js/ui.js:' + (i + 1) + ' in ' + owner[i] + '()');
+    }
+  });
+
+  ok(stranded.length === 0,
+     'translated text written outside a repainted function: ' + stranded.join(', '));
+});
+
+check('repaintCopy actually re-runs the painters it claims to', function () {
+  var source = fs.readFileSync(path.join(ROOT, 'js', 'ui.js'), 'utf8');
+  var body = source.slice(source.indexOf('function repaintCopy'));
+  body = body.slice(0, body.indexOf('\n  }') + 4);
+
+  ['renderDecks', 'renderLevels', 'syncToggles', 'paintWin', 'renderStickers'].forEach(function (fn) {
+    ok(body.indexOf(fn + '(') !== -1, 'repaintCopy never calls ' + fn + '()');
+  });
+  ok(body.indexOf('state.coachKey') !== -1, 'repaintCopy never redraws the coach line');
+  ok(body.indexOf('cardLabel') !== -1, 'repaintCopy never redraws the card labels');
+});
+
 /* ---------------------------------------------------------- report */
 
 console.log('');
