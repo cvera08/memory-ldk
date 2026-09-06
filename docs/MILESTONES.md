@@ -216,6 +216,49 @@ this change simply render without dots — no migration.
 
 ---
 
+## 2026-09-06 — The bug a green suite could not see
+
+Carlos found it by playing, which is the only way it could have been found: clear a
+board, then switch to Spanish. The panel kept "Amazing memory!" and the green
+"New best score for this board!" in English while everything around them changed.
+
+Both were written once, by hand, at the moment the board was cleared. `i18n.apply()`
+sweeps every `data-i18n` attribute in the document, so all the static copy followed
+the switch — but a string the UI assigns itself is invisible to that sweep. The same
+flaw was stranding the coach line mid-board and the sticker book while it was open.
+
+Nothing in the test suite could have caught it. The rules were right, every file was
+present, both string tables were complete, every key resolved. The defect lived in the
+gap between a correct string table and a screen that never asked for it again.
+
+**The fix.** The win result is now stored rather than only drawn, and one
+`repaintCopy()` redraws everything a language change can reach: the panel, the coach
+line, the open album, and the `aria-label` on every card.
+
+**The test.** A DOM-free suite cannot play the game, so the source is checked instead.
+Every hand-written translated string must live in a function on an explicit list of
+painters, and every function on that list is one `repaintCopy()` re-runs. Add a new
+painter and the suite fails on purpose, forcing somebody to decide whether a language
+change reaches it. Both mutations were verified: deleting the `paintWin()` call
+reproduces the original bug and fails; a new function writing translated text fails.
+
+That is the useful shape of the lesson. When a bug escapes because a *convention* was
+broken rather than a rule, the test to write is one that enforces the convention — not
+one more assertion about the thing that was already right.
+
+**A regression pass found something else.** Fifty-nine checks over everything built so
+far, and one came back red: after a peek, some cards still carried `is-up`. They were
+the matched ones, which had been given `is-matched` on top of `is-up` and kept both
+ever since. Visually identical — the CSS flips a card on either class — so nobody
+would ever have seen it. But to any code reading the DOM, a solved pair and a card
+being peeked at looked the same, which is exactly what tripped the check. Cleaned up:
+`is-matched` owns the flipped state now.
+
+A cosmetic state bug that only a test can see is still worth fixing. The next reader
+of that DOM might not be a test.
+
+---
+
 ## Post ideas
 
 **On designing for attention**
@@ -240,6 +283,10 @@ this change simply render without dots — no migration.
 - *"A test suite that cannot block a release is a suggestion."* Branch-mode Pages to a
   gated workflow deploy, and what it actually bought.
 - *"Internationalisation on day one, three weeks later."* The bill that never arrived.
+- *"The bug a green suite could not see."* A complete string table, a screen that never
+  asked again, and why the test to write was one that enforces a convention.
+- *"Two classes that meant the same thing."* A state smell no user could see, found by
+  a regression pass, and why that still matters.
 
 - *"When users disagree about what a button does, it is doing two things."* The sound/music split.
 - *"The setting worked. It was still broken."* Discoverability as a correctness property.
